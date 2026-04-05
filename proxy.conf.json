@@ -1,0 +1,18 @@
+{
+  "/user": {
+    "target": "http://localhost:4443",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/recipe": {
+    "target": "http://localhost:6443",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/ws": {
+    "target": "ws://localhost:5443",
+    "ws": true,
+    "secure": false,
+    "changeOrigin": true
+  }
+}

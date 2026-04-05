@@ -1,0 +1,196 @@
+<div class="shopping-container">
+  <div class="list-card">
+    <div class="top-bar">
+      <h2 class="app-title">ShoppingList</h2>
+    </div>
+
+    <button
+      class="primary-action-btn"
+      type="button"
+      aria-label="Przenieś kupione na listę Kupione"
+      title="Przenieś kupione na listę Kupione"
+      (click)="sendBoughtItemsToBoughtList()"
+    >→</button>
+    <p *ngIf="data.categories().length === 0" class="empty-state">No categories loaded yet.</p>
+
+    <div *ngFor="let category of data.categories(); let i = index; trackBy: trackByCategory" class="category-block">
+      <div class="category-header">
+        <div class="category-actions">
+          <button
+            type="button"
+            class="reorder-btn"
+            (click)="moveCategoryUp(i)"
+            [disabled]="i === 0"
+            aria-label="Move category up"
+          >↑</button>
+          <button
+            type="button"
+            class="reorder-btn"
+            (click)="moveCategoryDown(i)"
+            [disabled]="i === data.categories().length - 1"
+            aria-label="Move category down"
+          >↓</button>
+        </div>
+        <div class="category-name">{{ category.categoryName }}</div>
+        <div class="category-header-right">
+          <div class="category-menu-wrap" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="category-menu-btn"
+              aria-label="Menu kategorii"
+              [attr.aria-expanded]="isCategoryMenuOpen(category)"
+              (click)="toggleCategoryMenu($event, category)"
+            >⋮</button>
+            <div class="category-menu-dropdown" *ngIf="isCategoryMenuOpen(category)" role="menu">
+              <button type="button" class="category-menu-item" role="menuitem" (click)="deleteCategory(category)">
+                Usuń kategorię
+              </button>
+              <button type="button" class="category-menu-item" role="menuitem" (click)="openEditCategoryDialog(category)">
+                Edytuj kategorię
+              </button>
+              <button
+                type="button"
+                class="category-menu-item"
+                role="menuitem"
+                (click)="toggleCategoryCollapsedFromMenu(category)"
+              >{{ collapseCategoryMenuLabel(category) }}</button>
+            </div>
+          </div>
+          <span class="category-collapsed-star" *ngIf="isCategoryCollapsed(category)" title="Kategoria zwinięta">★</span>
+        </div>
+      </div>
+
+      <ul class="items-list" *ngIf="!isCategoryCollapsed(category)">
+        <li *ngFor="let item of visibleItemsForCategory(category)" class="item-row">
+          <input
+            type="checkbox"
+            [ngModel]="item.bought"
+            (ngModelChange)="onBoughtToggle(item, $event)"
+          />
+          <span class="item-name">{{ item.itemName }}</span>
+          <span class="item-amount">{{ item.amount }}</span>
+          <span class="item-type">{{ data.amountTypes().find(a => data.getAmountTypeKey(a) === item.itemAmountTypeId)?.typeName }}</span>
+          <div class="item-actions">
+            <button
+              class="icon-btn"
+              type="button"
+              aria-label="Edytuj pozycję"
+              (click)="openEditItemDialog(item)"
+            >✎</button>
+            <button
+              class="icon-btn"
+              type="button"
+              aria-label="Usuń pozycję"
+              (click)="deleteShoppingItem(item)"
+            >🗑</button>
+          </div>
+        </li>
+      </ul>
+
+      <button
+        *ngIf="!isCategoryCollapsed(category)"
+        class="add-btn add-btn--category"
+        type="button"
+        aria-label="Dodaj pozycję do kategorii"
+        (click)="openNewItemDialog(category)"
+      >+</button>
+    </div>
+
+    <button
+      class="add-btn add-btn--list-footer"
+      type="button"
+      aria-label="Add category"
+      (click)="openNewCategoryDialog()"
+    >+</button>
+  </div>
+</div>
+
+<div
+  class="dialog-backdrop"
+  *ngIf="newCategoryDialogOpen"
+  (click)="closeNewCategoryDialog()"
+  role="presentation"
+>
+  <div class="dialog-panel" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="new-cat-title">
+    <h3 id="new-cat-title" class="dialog-title">{{ editingCategory ? 'Edytuj kategorię' : 'Nowa kategoria' }}</h3>
+    <label class="dialog-label" for="new-cat-name">Nazwa</label>
+    <input
+      id="new-cat-name"
+      class="dialog-input"
+      type="text"
+      [(ngModel)]="newCategoryName"
+      (keydown.enter)="confirmNewCategory()"
+      autocomplete="off"
+    />
+    <div class="dialog-actions">
+      <button type="button" class="dialog-btn dialog-btn--secondary" (click)="closeNewCategoryDialog()">Anuluj</button>
+      <button
+        type="button"
+        class="dialog-btn dialog-btn--primary"
+        (click)="confirmNewCategory()"
+        [disabled]="!newCategoryName.trim()"
+      >{{ editingCategory ? 'Zapisz' : 'Dodaj' }}</button>
+    </div>
+  </div>
+</div>
+
+<div
+  class="dialog-backdrop"
+  *ngIf="newItemDialogOpen"
+  (click)="closeNewItemDialog()"
+  role="presentation"
+>
+  <div class="dialog-panel dialog-panel--wide" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="new-item-title">
+    <h3 id="new-item-title" class="dialog-title">{{ editingShoppingItem ? 'Edytuj pozycję' : 'Nowa pozycja' }}</h3>
+
+    <label class="dialog-label" for="new-item-name">Nazwa produktu</label>
+    <input
+      id="new-item-name"
+      class="dialog-input"
+      type="text"
+      [(ngModel)]="newItemName"
+      autocomplete="off"
+    />
+
+    <label class="dialog-label" for="new-item-amount">Ilość</label>
+    <input
+      id="new-item-amount"
+      class="dialog-input"
+      type="number"
+      step="any"
+      min="0"
+      [(ngModel)]="newItemAmount"
+    />
+
+    <label class="dialog-label" for="new-item-category">Kategoria</label>
+    <select
+      id="new-item-category"
+      class="dialog-input dialog-select"
+      [(ngModel)]="newItemCategoryIndex"
+    >
+      <option *ngFor="let c of data.categories(); let idx = index" [ngValue]="idx">{{ c.categoryName }}</option>
+    </select>
+
+    <label class="dialog-label" for="new-item-amount-type">Jednostka</label>
+    <select
+      id="new-item-amount-type"
+      class="dialog-input dialog-select"
+      [(ngModel)]="newItemAmountTypeId"
+      [disabled]="data.amountTypes().length === 0"
+    >
+      <option [ngValue]="null" disabled>— wybierz —</option>
+      <option *ngFor="let at of data.amountTypes()" [ngValue]="data.getAmountTypeKey(at)">{{ at.typeName }}</option>
+    </select>
+    <p *ngIf="data.amountTypes().length === 0" class="dialog-hint">Brak typów ilości — zsynchronizuj listę lub dodaj jednostki.</p>
+
+    <div class="dialog-actions">
+      <button type="button" class="dialog-btn dialog-btn--secondary" (click)="closeNewItemDialog()">Anuluj</button>
+      <button
+        type="button"
+        class="dialog-btn dialog-btn--primary"
+        (click)="confirmNewItem()"
+        [disabled]="!canConfirmNewItem()"
+      >{{ editingShoppingItem ? 'Zapisz' : 'Dodaj' }}</button>
+    </div>
+  </div>
+</div>

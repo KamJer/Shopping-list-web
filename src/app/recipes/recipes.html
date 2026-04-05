@@ -1,0 +1,324 @@
+<div class="recipes-page">
+  <div class="recipes-card">
+    <h1 class="recipes-title">Przepisy</h1>
+
+    <div class="recipes-filters">
+      <div class="filter-row">
+        <button type="button" class="filter-btn" (click)="setMode('all')">Wszystkie</button>
+        <button type="button" class="filter-btn" (click)="setMode('name')">Po nazwie</button>
+        <button type="button" class="filter-btn" (click)="setMode('products')">Wg produktów</button>
+        <button type="button" class="filter-btn" (click)="setMode('tags')">Po tagach</button>
+      </div>
+
+      <div *ngIf="mode === 'name'" class="filter-panel">
+        <label class="filter-label" for="name-query">Nazwa (query)</label>
+        <input id="name-query" class="filter-input" type="text" [(ngModel)]="nameQuery" />
+        <p class="filter-hint">Zapytanie: <code>/recipe/name/&lt;query&gt;</code></p>
+      </div>
+
+      <div *ngIf="mode === 'products'" class="filter-panel">
+        <label class="filter-label" for="products-text">Produkty (oddziel przecinkami)</label>
+        <textarea
+          id="products-text"
+          class="filter-textarea"
+          [(ngModel)]="productsText"
+          rows="3"
+          placeholder="np. ryż, kurczak, marchew"
+        ></textarea>
+
+        <label class="filter-label" for="max-missing">MaxMissing</label>
+        <input
+          id="max-missing"
+          class="filter-input"
+          type="number"
+          [(ngModel)]="maxMissing"
+          min="0"
+        />
+        <p class="filter-hint">
+          POST: <code>/recipe/products/required</code> + body <code>RecipeRequestDto</code>
+        </p>
+      </div>
+
+      <div *ngIf="mode === 'tags'" class="filter-panel">
+        <label class="filter-label" for="tags-text">Tagi (oddziel przecinkami)</label>
+        <input id="tags-text" class="filter-input" type="text" [(ngModel)]="tagsText" placeholder="np. wege, szybkie" />
+        <p class="filter-hint">
+          POST: <code>/recipe/tag</code> + body <code>Set&lt;TagDto&gt;</code>
+        </p>
+      </div>
+
+      <div class="filter-actions">
+        <button type="button" class="primary-btn" (click)="load()">Szukaj</button>
+      </div>
+    </div>
+
+    <div class="recipes-list">
+      <div class="recipes-list-toolbar">
+        <span class="recipes-list-toolbar-label">Lista przepisów</span>
+        <div class="recipes-list-toolbar-actions">
+          <button type="button" class="toolbar-new-recipe-btn" (click)="openCreateRecipe()">
+            Nowy przepis
+          </button>
+          <button
+            type="button"
+            class="toolbar-user-recipes-btn"
+            [class.active]="mode === 'mine'"
+            (click)="showUserRecipes()"
+          >
+            Moje przepisy
+          </button>
+        </div>
+      </div>
+
+      <p *ngIf="isLoading" class="empty-state">Ładowanie przepisów...</p>
+      <p *ngIf="!isLoading && recipes.length === 0 && initialLoadDone" class="empty-state">Brak przepisów.</p>
+
+      <ul *ngIf="recipes.length > 0" class="recipes-ul">
+        <li *ngFor="let r of recipes" class="recipe-card">
+          <a
+            class="recipe-card-link"
+            [routerLink]="['/recipes', getRecipeId(r)]"
+            [state]="{ recipe: r }"
+          >
+            <span class="recipe-card-title">{{ getRecipeName(r) }}</span>
+            <span class="recipe-card-snippet" [class.muted]="!getDescriptionSnippet(r)">
+              {{ getDescriptionSnippet(r) || 'Brak opisu w podglądzie.' }}
+            </span>
+          </a>
+
+          <div class="recipe-card-actions" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="recipe-icon-btn recipe-icon-btn-edit"
+              (click)="openEdit(r, $event)"
+              aria-label="Modyfikuj przepis"
+              title="Modyfikuj"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="recipe-icon-btn recipe-icon-btn-delete"
+              (click)="confirmDelete(r, $event)"
+              aria-label="Usuń przepis"
+              title="Usuń"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                />
+              </svg>
+            </button>
+          </div>
+        </li>
+      </ul>
+
+      <div class="pagination">
+        <button type="button" class="page-btn" (click)="prevPage()" [disabled]="page <= 0">←</button>
+        <span class="page-info">
+          Strona {{ page + 1 }} / {{ totalPages || 1 }} ({{ totalElements }})
+        </span>
+        <button
+          type="button"
+          class="page-btn"
+          (click)="nextPage()"
+          [disabled]="totalPages <= 0 || page >= totalPages - 1"
+        >→</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="recipe-create-backdrop"
+  *ngIf="showRecipeFormModal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="recipe-form-title"
+  (click)="closeRecipeForm()"
+>
+  <div class="recipe-create-dialog" (click)="$event.stopPropagation()">
+    <h3 id="recipe-form-title" class="recipe-edit-heading">
+      {{ recipeFormEditSource ? 'Modyfikacja przepisu' : 'Nowy przepis' }}
+    </h3>
+
+    <label class="recipe-edit-label" for="form-title">Tytuł</label>
+    <input
+      id="form-title"
+      class="recipe-edit-input"
+      type="text"
+      [(ngModel)]="newTitle"
+      placeholder="Nazwa przepisu"
+      autocomplete="off"
+    />
+
+    <label class="recipe-edit-label" for="form-desc">Opis</label>
+    <textarea
+      id="form-desc"
+      class="recipe-edit-textarea"
+      rows="4"
+      [(ngModel)]="newDescription"
+      placeholder="Krótki opis przepisu"
+    ></textarea>
+
+    <label class="recipe-checkbox-row" for="form-recipe-public">
+      <input
+        id="form-recipe-public"
+        type="checkbox"
+        [(ngModel)]="recipeIsPublic"
+        name="recipePublic"
+      />
+      <span>Opublikuj przepis (widoczny publicznie)</span>
+    </label>
+
+    <div class="recipe-form-section">
+      <div class="recipe-form-section-head">
+        <span class="recipe-form-section-title">Tagi</span>
+        <button type="button" class="recipe-add-row-btn" (click)="addTagField()">Dodaj pole tagu</button>
+      </div>
+      <ul class="recipe-dynamic-rows">
+        <li
+          *ngFor="let row of createTagRows; let i = index; trackBy: trackCreateRowId"
+          class="recipe-dynamic-row"
+        >
+          <input
+            type="text"
+            class="recipe-edit-input recipe-dynamic-input"
+            [(ngModel)]="row.value"
+            [name]="'tag-' + row.id"
+            placeholder="np. wegetariańskie"
+          />
+          <button
+            type="button"
+            class="recipe-icon-btn recipe-icon-btn-delete recipe-row-remove"
+            (click)="removeTagField(i)"
+            aria-label="Usuń pole tagu"
+            title="Usuń"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+              />
+            </svg>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="recipe-form-section">
+      <div class="recipe-form-section-head">
+        <span class="recipe-form-section-title">Składniki</span>
+        <button type="button" class="recipe-add-row-btn" (click)="addIngredientField()">Dodaj składnik</button>
+      </div>
+      <ul class="recipe-dynamic-rows">
+        <li
+          *ngFor="let row of createIngredientRows; let i = index; trackBy: trackCreateRowId"
+          class="recipe-dynamic-row recipe-dynamic-row-ingredient"
+        >
+          <div class="recipe-ingredient-fields">
+            <input
+              type="text"
+              class="recipe-edit-input recipe-ing-col-name"
+              [(ngModel)]="row.productName"
+              [name]="'ing-name-' + row.id"
+              placeholder="Nazwa składnika"
+              autocomplete="off"
+            />
+            <input
+              type="text"
+              inputmode="decimal"
+              class="recipe-edit-input recipe-ing-col-amount"
+              [(ngModel)]="row.amount"
+              [name]="'ing-amt-' + row.id"
+              placeholder="Ilość"
+              autocomplete="off"
+            />
+            <input
+              type="text"
+              class="recipe-edit-input recipe-ing-col-unit"
+              [(ngModel)]="row.unitType"
+              [name]="'ing-unit-' + row.id"
+              placeholder="Typ jednostki"
+              autocomplete="off"
+            />
+          </div>
+          <button
+            type="button"
+            class="recipe-icon-btn recipe-icon-btn-delete recipe-row-remove"
+            (click)="removeIngredientField(i)"
+            aria-label="Usuń składnik"
+            title="Usuń"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+              />
+            </svg>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="recipe-form-section">
+      <div class="recipe-form-section-head">
+        <span class="recipe-form-section-title">Kroki przygotowania</span>
+        <button type="button" class="recipe-add-row-btn" (click)="addStepField()">Dodaj krok</button>
+      </div>
+      <ul class="recipe-dynamic-rows">
+        <li
+          *ngFor="let row of createStepRows; let i = index; trackBy: trackCreateRowId"
+          class="recipe-dynamic-row recipe-dynamic-row-step"
+        >
+          <input
+            type="text"
+            class="recipe-edit-input recipe-step-order-input"
+            [(ngModel)]="row.stepNumber"
+            [name]="'step-no-' + row.id"
+            placeholder="Nr"
+            inputmode="numeric"
+            autocomplete="off"
+            title="Numer kroku"
+          />
+          <textarea
+            class="recipe-edit-textarea recipe-dynamic-textarea"
+            rows="2"
+            [(ngModel)]="row.value"
+            [name]="'step-' + row.id"
+            placeholder="Opis kroku"
+          ></textarea>
+          <button
+            type="button"
+            class="recipe-icon-btn recipe-icon-btn-delete recipe-row-remove"
+            (click)="removeStepField(i)"
+            aria-label="Usuń krok"
+            title="Usuń"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+              />
+            </svg>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="recipe-edit-actions">
+      <button type="button" class="recipe-edit-cancel" (click)="closeRecipeForm()" [disabled]="isFormSaving">
+        Anuluj
+      </button>
+      <button type="button" class="recipe-edit-save" (click)="submitRecipeForm()" [disabled]="isFormSaving">
+        {{ isFormSaving ? 'Zapisywanie…' : (recipeFormEditSource ? 'Zapisz zmiany' : 'Utwórz przepis') }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,53 @@
+<div class="recipe-detail-page">
+  <div class="recipe-detail-card">
+    <button type="button" class="back-btn" (click)="goBack()">← Wróć do listy</button>
+
+    <ng-container *ngIf="isLoading; else contentBlock">
+      <p class="detail-loading">Ładowanie przepisu...</p>
+    </ng-container>
+
+    <ng-template #contentBlock>
+      <ng-container *ngIf="recipe; else errorBlock">
+        <h1 class="recipe-detail-title">{{ getRecipeName(recipe) }}</h1>
+
+        <section class="detail-section detail-section--block">
+          <h2 class="detail-section-title">Opis</h2>
+          <p *ngIf="getDescription(recipe) as desc" class="recipe-detail-description">{{ desc }}</p>
+          <p *ngIf="!getDescription(recipe)" class="detail-empty">Brak opisu.</p>
+        </section>
+
+        <section class="detail-section detail-section--block">
+          <h2 class="detail-section-title">Tagi</h2>
+          <div *ngIf="getTags(recipe).length > 0" class="tag-list">
+            <span *ngFor="let tag of getTags(recipe)" class="tag-pill">{{ tag }}</span>
+          </div>
+          <p *ngIf="getTags(recipe).length === 0" class="detail-empty">Brak tagów.</p>
+        </section>
+
+        <section class="detail-section detail-section--block">
+          <h2 class="detail-section-title">Składniki</h2>
+          <ul *ngIf="getIngredientRows(recipe).length > 0" class="ingredient-table">
+            <li *ngFor="let ing of getIngredientRows(recipe)" class="ingredient-row">
+              <span class="ingredient-cell ingredient-name">{{ ing.name }}</span>
+              <span class="ingredient-cell ingredient-amount">{{ ing.amount }}</span>
+              <span class="ingredient-cell ingredient-unit">{{ ing.unit }}</span>
+            </li>
+          </ul>
+          <p *ngIf="getIngredientRows(recipe).length === 0" class="detail-empty">Brak składników.</p>
+        </section>
+
+        <section class="detail-section detail-section--block">
+          <h2 class="detail-section-title">Kroki</h2>
+          <ol *ngIf="getSteps(recipe).length > 0" class="detail-list detail-list--ordered">
+            <li *ngFor="let step of getSteps(recipe)">{{ step }}</li>
+          </ol>
+          <p *ngIf="getSteps(recipe).length === 0" class="detail-empty">Brak kroków przygotowania.</p>
+        </section>
+      </ng-container>
+    </ng-template>
+
+    <ng-template #errorBlock>
+      <p class="detail-error">{{ errorMessage || 'Przepis nie został znaleziony.' }}</p>
+    </ng-template>
+  </div>
+</div>

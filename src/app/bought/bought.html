@@ -1,0 +1,52 @@
+<div class="shopping-container">
+  <div class="list-card">
+    <div class="top-bar">
+      <h2 class="app-title">Kupione</h2>
+    </div>
+
+    <p
+      *ngIf="data.shoppingItems().filter(i => i.bought && i.sendToBought).length === 0"
+      class="empty-state"
+    >
+      Brak zakupionych pozycji.
+    </p>
+
+    <div
+      *ngFor="let category of data.categories(); trackBy: trackByCategory"
+      class="category-block"
+    >
+      <ng-container *ngIf="visibleBoughtItemsForCategory(category).length > 0">
+        <div class="category-header">
+          <div class="category-actions"></div>
+          <div class="category-name">{{ category.categoryName }}</div>
+          <div class="category-header-right"></div>
+        </div>
+
+        <ul class="items-list">
+          <li *ngFor="let item of visibleBoughtItemsForCategory(category)" class="item-row">
+            <input
+              type="checkbox"
+              [ngModel]="item.bought"
+              (ngModelChange)="onBoughtToggle(item, $event)"
+            />
+            <span class="item-name">{{ item.itemName }}</span>
+            <span class="item-amount">{{ item.amount }}</span>
+            <span class="item-type">{{
+              data.amountTypes().find(a => data.getAmountTypeKey(a) === item.itemAmountTypeId)?.typeName
+            }}</span>
+
+            <div class="item-actions">
+              <button
+                class="icon-btn"
+                type="button"
+                aria-label="Usuń pozycję"
+                (click)="deleteBoughtItem(item)"
+              >🗑</button>
+            </div>
+          </li>
+        </ul>
+      </ng-container>
+    </div>
+  </div>
+</div>
+

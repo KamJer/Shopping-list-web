@@ -1,0 +1,55 @@
+<div class="units-page">
+  <div class="units-card">
+    <h1 class="units-title">Jednostki</h1>
+    <p *ngIf="data.amountTypes().length === 0" class="units-empty">Brak jednostek — dodaj pierwszą lub zsynchronizuj z serwerem.</p>
+    <ul *ngIf="data.amountTypes().length > 0" class="units-list" role="list">
+      <li *ngFor="let unit of data.amountTypes(); trackBy: trackByAmountType" class="units-row">
+        <span class="units-name">{{ unit.typeName }}</span>
+        <div class="units-actions">
+          <button
+            type="button"
+            class="icon-btn"
+            aria-label="Edytuj jednostkę"
+            (click)="openEditUnitDialog(unit)"
+          >✎</button>
+          <button
+            type="button"
+            class="icon-btn"
+            aria-label="Usuń jednostkę"
+            (click)="deleteUnit(unit)"
+          >🗑</button>
+        </div>
+      </li>
+    </ul>
+    <button type="button" class="units-add-btn" aria-label="Dodaj jednostkę" (click)="openNewUnitDialog()">+</button>
+  </div>
+</div>
+
+<div
+  class="dialog-backdrop"
+  *ngIf="unitDialogOpen"
+  (click)="closeUnitDialog()"
+  role="presentation"
+>
+  <div class="dialog-panel" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="unit-dialog-title">
+    <h3 id="unit-dialog-title" class="dialog-title">{{ editingUnit ? 'Edytuj jednostkę' : 'Nowa jednostka' }}</h3>
+    <label class="dialog-label" for="unit-name-input">Nazwa</label>
+    <input
+      id="unit-name-input"
+      class="dialog-input"
+      type="text"
+      [(ngModel)]="unitName"
+      (keydown.enter)="confirmUnitDialog()"
+      autocomplete="off"
+    />
+    <div class="dialog-actions">
+      <button type="button" class="dialog-btn dialog-btn--secondary" (click)="closeUnitDialog()">Anuluj</button>
+      <button
+        type="button"
+        class="dialog-btn dialog-btn--primary"
+        (click)="confirmUnitDialog()"
+        [disabled]="!unitName.trim()"
+      >{{ editingUnit ? 'Zapisz' : 'Dodaj' }}</button>
+    </div>
+  </div>
+</div>
