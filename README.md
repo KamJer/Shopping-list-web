@@ -1,59 +1,108 @@
-# ShoppingListWeb
+# Shopping List Web
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.1.
+Frontend for a shopping-list application — an SPA that talks to separate user and recipe services and a WebSocket endpoint for real-time synchronization.
 
-## Development server
+## What this project is
 
-To start a local development server, run:
+**Shopping List Web** is the presentation layer (Angular client) for a shopping-list ecosystem: sign-in, product list, units, purchase history, and a recipes module. The app does not ship its own API — it expects backends to be running at known URLs (see [Backend and proxy](#backend-and-proxy)).
 
-```bash
-ng serve
-```
+## What the application does
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+| Area | Description |
+|------|-------------|
+| **Sign-in** | Login form (`/`), `POST /user/log`, tokens (including Bearer in the `Authorization` header). |
+| **Shopping list** | Main list view (`/list`) with sync over **WebSocket** (`/ws`). |
+| **Units** | Managing measurement units (`/units`). |
+| **Bought** | View / handling of bought items (`/bought`). |
+| **Recipes** | Recipe list and details (`/recipes`, `/recipes/:id`) via REST **`/recipe`**… |
 
-## Code scaffolding
+Protected routes require authentication (`authGuard`); the home route for guests uses `guestGuard`.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Technology stack
 
-```bash
-ng generate component component-name
-```
+- **[Angular](https://angular.dev/)** 21 (standalone components, router, HTTP client, functional interceptors)
+- **TypeScript** ~5.9
+- **[RxJS](https://rxjs.dev/)** — streams, including WebSocket via `WebSocketSubject`
+- **[@angular/build](https://angular.dev/tools/cli/build)** — application build and dev server
+- **[Vitest](https://vitest.dev/)** — unit tests (`ng test`)
+- **Prettier** — code formatting
+- **npm** (use the version aligned with `packageManager` in `package.json`)
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Requirements
 
-```bash
-ng generate --help
-```
+- **Node.js** (LTS, e.g. 20.x or 22.x — per Angular 21 requirements)
+- **npm** (e.g. 11.x)
+- Running **backends** during local development (see below) if you need full functionality (login, list, recipes, WS)
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Installation
 
 ```bash
-ng test
+git clone <repository-url>
+cd ShoppingListWeb
+npm install
 ```
 
-## Running end-to-end tests
+## Backend and proxy
 
-For end-to-end (e2e) testing, run:
+In development, `npm start` runs the dev server with **`proxy.conf.json`**, which forwards:
+
+| Path | Target service (default) |
+|------|--------------------------|
+| `/user` | `http://localhost:4443` — user API (login, refresh, logout) |
+| `/recipe` | `http://localhost:6443` — recipes API |
+| `/ws` | `ws://localhost:5443` — WebSocket (list synchronization) |
+
+Without these services, some features will fail with network errors. In **production** (e.g. nginx), configure a **reverse proxy** for `/user`, `/recipe`, and `/ws` to the same internal services and serve the static build from the `browser` folder (see [Production build](#production-build)).
+
+## Local development
 
 ```bash
-ng e2e
+npm start
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+This is `ng serve` with `proxy.conf.json`. App URL: **http://localhost:4200/**
 
-## Additional Resources
+## Production build
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+```bash
+npm run build
+```
+
+Output goes to **`dist/ShoppingListWeb/browser/`** (including `index.html` and bundled JS/CSS). Point nginx (or another static server) `root` at that directory and add `try_files` for Angular routing, for example:
+
+```nginx
+location / {
+    try_files $uri $uri/ /index.html;
+}
+```
+
+## Testing
+
+```bash
+npm test
+```
+
+Runs unit tests (Vitest) via `ng test`.
+
+## npm scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm start` | Dev server + proxy |
+| `npm run build` | Production build |
+| `npm run watch` | Development build in watch mode |
+| `npm test` | Unit tests |
+
+## Repository structure (overview)
+
+- `src/app/` — components, routes, guards, interceptors, services (including WebSocket, tokens)
+- `src/app/login/` — authentication
+- `src/app/shopping-list/` — shopping list and WS integration
+- `src/app/recipes/` — recipes
+- `src/app/units/`, `src/app/bought/` — units and bought items
+- `public/` — static assets
+- `proxy.conf.json` — proxy for `ng serve` only
+
+---
+
+*Originally scaffolded with Angular CLI; this README reflects the current feature set and deployment notes.*
