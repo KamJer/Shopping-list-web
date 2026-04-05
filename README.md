@@ -42,6 +42,16 @@ cd ShoppingListWeb
 npm install
 ```
 
+## Related backend repositories
+
+This UI expects three separate backend services. Clone and run them according to each project’s README (ports must match your environment or update `proxy.conf.json` / reverse proxy).
+
+| Repository | Role | Proxied path (dev default) |
+|------------|------|----------------------------|
+| [**RecipeService**](https://github.com/KamJer/RecipeService) | Recipes REST API | `/recipe` → `http://localhost:6443` |
+| [**Shopping-security-service**](https://github.com/KamJer/Shopping-security-service) | Users — login, tokens, refresh, logout | `/user` → `http://localhost:4443` |
+| [**shopping-list-service**](https://github.com/KamJer/shopping-list-service) | Shopping list — **WebSocket** for real-time list sync | `/ws` → `ws://localhost:5443` |
+
 ## Backend and proxy
 
 In development, `npm start` runs the dev server with **`proxy.conf.json`**, which forwards:
