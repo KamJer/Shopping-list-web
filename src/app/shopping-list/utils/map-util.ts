@@ -34,6 +34,7 @@ export class MapUtil {
 
   static ShoppingItemDtoToModel(dto: ShoppingItemDto): ShoppingItem {
     const d = dto as ShoppingItemDto & Record<string, unknown>;
+    const localId = d.localId != null ? Number(d.localId) : undefined;
     return {
       shoppingItemId: d.shoppingItemId,
       itemAmountTypeId: (d.itemAmountTypeId ?? d['amountTypeId']) as number | undefined,
@@ -43,7 +44,8 @@ export class MapUtil {
       bought: Boolean(d.bought),
       sendToBought: Boolean(d.sendToBought),
       deleted: Boolean(d.deleted),
-      savedTime: d.savedTime as Date | null | undefined
+      savedTime: d.savedTime as Date | null | undefined,
+      localId: localId !== undefined && Number.isFinite(localId) && localId > 0 ? localId : undefined
     };
   }
 

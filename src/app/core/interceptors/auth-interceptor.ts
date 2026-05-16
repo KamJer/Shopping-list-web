@@ -24,10 +24,19 @@ function requestUrlLower(req: HttpRequest<unknown>): string {
   }
 }
 
-/** Nie próbujemy odświeżać przy 401 z logowania ani samego refresh. */
-function shouldSkip401Refresh(req: HttpRequest<unknown>): boolean {
+function normalizedPathname(req: HttpRequest<unknown>): string {
   const path = requestUrlLower(req);
-  return path === AUTH_REFRESH_PATH || path.endsWith('/user/log');
+  return path.endsWith('/') && path.length > 1 ? path.slice(0, -1) : path;
+}
+
+/** Nie próbujemy odświeżać przy 401 z logowania, rejestracji ani samego refresh. */
+function shouldSkip401Refresh(req: HttpRequest<unknown>): boolean {
+  const path = normalizedPathname(req);
+  return (
+    path === AUTH_REFRESH_PATH ||
+    path.endsWith('/user/log') ||
+    path.endsWith('/user/register')
+  );
 }
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

@@ -1,4 +1,4 @@
-/** Odpowiedź z `/user/log` i `/user/refresh` (refresh tylko jako HttpOnly cookie — nie zapisujemy w JS). */
+/** Odpowiedź z `/user/log`, `/user/register` i `/user/refresh` (refresh często tylko w HttpOnly cookie). */
 export interface TokenDto {
   accessToken: string;
   refreshToken?: string;

@@ -11,6 +11,7 @@ Frontend for a shopping-list application — an SPA that talks to separate user 
 | Area | Description |
 |------|-------------|
 | **Sign-in** | Login form (`/`), `POST /user/log`, tokens (including Bearer in the `Authorization` header). |
+| **Registration** | `POST /user/register` — same body as login; response includes tokens like `/user/log`. |
 | **Shopping list** | Main list view (`/list`) with sync over **WebSocket** (`/ws`). |
 | **Units** | Managing measurement units (`/units`). |
 | **Bought** | View / handling of bought items (`/bought`). |
@@ -63,6 +64,46 @@ In development, `npm start` runs the dev server with **`proxy.conf.json`**, whic
 | `/ws` | `ws://localhost:5443` — WebSocket (list synchronization) |
 
 Without these services, some features will fail with network errors. In **production** (e.g. nginx), configure a **reverse proxy** for `/user`, `/recipe`, and `/ws` to the same internal services and serve the static build from the `browser` folder (see [Production build](#production-build)).
+
+### Shopping-security-service: registration endpoint
+
+This SPA calls **`POST /user/register`** for sign-up (same `UserRequestDto` as login: `userName`, `password`). The handler should return the **same token payload** as **`POST /user/log`** so the app can sign the user in immediately. Allow it anonymously in [**Shopping-security-service**](https://github.com/KamJer/Shopping-security-service).
+
+**`UserController.java`** (e.g. class-level `@RequestMapping("/user")`):
+
+```java
+@PostMapping("/register")
+public ResponseEntity<?> register(@Valid @RequestBody UserRequestDto user) {
+    return ResponseEntity.ok(userService.insertUserAndIssueTokens(user));
+}
+```
+
+**`WebSecurityConfiguration.java`** (inside `authorizeHttpRequests`, with your other `/user` rules):
+
+```java
+.requestMatchers(HttpMethod.POST, "/user/register").permitAll()
+```
+
+(Re-deploy the security service after changing it.)
+
+### HTTPS / Cloudflare tunnel — Mixed Content on registration
+
+If the page is served over **HTTPS** but the browser tries **`http://…:port/user`**, the request was likely **redirected** with a bad `Location` or **`location /user/`** in nginx did not match **`POST /user`** (only paths like `/user/log` did).
+
+Prefer a **prefix** `location` and pass the full URI to the upstream (no path suffix on `proxy_pass`):
+
+```nginx
+location ^~ /user {
+    proxy_pass http://127.0.0.1:9080;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+On Spring Boot behind a reverse proxy, set **`server.forward-headers-strategy=framework`** (or `native`) so any redirects use the public **HTTPS** host, not `http://…:9080`.
 
 ## Local development
 

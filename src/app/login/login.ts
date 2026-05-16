@@ -24,21 +24,27 @@ export class Login {
     private tokenService: TokenService
   ) {}
 
+  /** Zapisuje sesję i przechodzi do listy, jeśli w `rawBody` jest token (jak z `/user/log`). */
+  private tryFinishLogin(username: string, rawBody: unknown): boolean {
+    const dto = normalizeTokenResponse(rawBody);
+    if (!dto?.accessToken) {
+      return false;
+    }
+    this.tokenService.setUserName(username);
+    this.tokenService.persistAuthTokens(dto);
+    void this.router.navigate(['/list']);
+    return true;
+  }
+
   onLogin() {
     const user = {
-    userName: this.username,
-    password: this.password
-  };
+      userName: this.username,
+      password: this.password
+    };
 
-  this.http.post<TokenDto>('/user/log', user)
-    .subscribe({
+    this.http.post<TokenDto>('/user/log', user).subscribe({
       next: (response) => {
-        const dto = normalizeTokenResponse(response);
-        if (dto?.accessToken) {
-          this.tokenService.setUserName(this.username);
-          this.tokenService.persistAuthTokens(dto);
-          this.router.navigate(['/list']);
-        } else {
+        if (!this.tryFinishLogin(this.username, response)) {
           alert('Niepoprawny login lub hasło');
         }
       },
@@ -55,12 +61,17 @@ export class Login {
       password: this.password
     };
 
-    this.http.post('/user', data)
-      .subscribe({
-        next: () => {},
-        error: (err) => {
-          console.error('Błąd rejestracji', err);
+    /** `POST /user/register` — to samo DTO co logowanie; odpowiedź z tokenami jak `/user/log`. */
+    this.http.post<TokenDto>('/user/register', data).subscribe({
+      next: (response) => {
+        if (!this.tryFinishLogin(this.username, response)) {
+          alert('Rejestracja nie zwróciła tokenów — sprawdź odpowiedź serwisu.');
         }
-      });
+      },
+      error: (err) => {
+        console.error('Błąd rejestracji', err);
+        alert('Błąd rejestracji — sprawdź dane lub czy login jest wolny.');
+      }
+    });
   }
 }
