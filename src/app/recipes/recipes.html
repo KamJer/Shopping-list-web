@@ -86,7 +86,7 @@
             </span>
           </a>
 
-          <div class="recipe-card-actions" (click)="$event.stopPropagation()">
+          <div *ngIf="isOwnRecipe(r)" class="recipe-card-actions" (click)="$event.stopPropagation()">
             <button
               type="button"
               class="recipe-icon-btn recipe-icon-btn-edit"

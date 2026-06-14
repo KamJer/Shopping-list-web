@@ -10,6 +10,8 @@ import { RecipeRequestDto } from './models/recipe-request-dto.model';
 import { TagDto } from './models/tag-dto.model';
 import { PageResult } from './models/page-result.model';
 import { RecipeFormService } from './services/recipe-form.service';
+import { NotificationService } from '../core/services/notification';
+import { TokenService } from '../core/services/token.service';
 
 @Component({
   selector: 'app-recipes',
@@ -23,6 +25,8 @@ export class Recipes implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly view = inject(RecipeViewAdapter);
   private readonly form = inject(RecipeFormService);
+  private readonly notify = inject(NotificationService);
+  private readonly tokenService = inject(TokenService);
 
   recipes: RecipeDto[] = [];
   totalPages = 0;
@@ -135,7 +139,7 @@ export class Recipes implements OnInit {
   submitRecipeForm(): void {
     const title = this.newTitle.trim();
     if (!title) {
-      window.alert('Podaj tytuł przepisu.');
+      this.notify.show('Podaj tytuł przepisu.', 'warn');
       return;
     }
     if (this.isFormSaving) {
@@ -158,8 +162,8 @@ export class Recipes implements OnInit {
         this.closeRecipeForm();
         this.load();
       },
-      error: err => {
-        console.error('Zapis przepisu:', err);
+      error: () => {
+        this.notify.show('Nie udało się zapisać przepisu', 'error');
         this.isFormSaving = false;
         this.cdr.markForCheck();
       }
@@ -183,6 +187,18 @@ export class Recipes implements OnInit {
     this.cdr.markForCheck();
   }
 
+  isOwnRecipe(recipe: RecipeDto): boolean {
+    const currentUser = this.tokenService.getUserName();
+    if (!currentUser) {
+      return false;
+    }
+    const owner = this.view.getRecipeOwner(recipe);
+    if (!owner) {
+      return false;
+    }
+    return owner.toLowerCase() === currentUser.toLowerCase();
+  }
+
   confirmDelete(recipe: RecipeDto, ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();
@@ -195,7 +211,7 @@ export class Recipes implements OnInit {
     }
     this.recipesService.deleteRecipe(id).subscribe({
       next: () => this.load(),
-      error: err => console.error('Usuwanie przepisu:', err)
+      error: () => this.notify.show('Nie udało się usunąć przepisu', 'error')
     });
   }
 
@@ -204,8 +220,8 @@ export class Recipes implements OnInit {
     this.isLoading = true;
     this.recipes = [];
 
-    const handleError = (err: unknown): void => {
-      console.error('Recipes load error:', err);
+    const handleError = (): void => {
+      this.notify.show('Nie udało się załadować przepisów', 'error');
       this.isLoading = false;
       if (isInitial && this.initialLoadRetries < 2) {
         this.initialLoadRetries += 1;

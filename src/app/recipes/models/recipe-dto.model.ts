@@ -5,6 +5,9 @@ export interface RecipeDto {
   name?: string;
   recipeName?: string;
   title?: string;
+  /** Kto utworzył przepis (userName / source z backendu). */
+  userName?: string;
+  source?: string;
 
   /** Reszta pól jest zależna od backendu. */
   [key: string]: unknown;

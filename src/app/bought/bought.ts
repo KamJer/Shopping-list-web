@@ -24,7 +24,7 @@ export class Bought implements OnInit {
     this.data.trackCategory(_index, c);
 
   visibleBoughtItemsForCategory(category: Category): ShoppingItem[] {
-    const items = this.data.itemsForCategory(category).filter(i => i.bought && i.sendToBought);
+    const items = this.data.itemsForCategory(category).filter(i => i.bought && i.sendToBought && !i.deleted);
     return [...items].sort((a, b) =>
       a.itemName.localeCompare(b.itemName, 'pl', { sensitivity: 'base' })
     );

@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { normalizeTokenResponse, TokenDto } from '../core/models/token-dto.model';
 import { TokenService } from '../core/services/token.service';
+import { NotificationService } from '../core/services/notification';
 
 @Component({
   selector: 'app-login',
@@ -21,7 +22,8 @@ export class Login {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private tokenService: TokenService
+    private tokenService: TokenService,
+    private notify: NotificationService
   ) {}
 
   /** Zapisuje sesję i przechodzi do listy, jeśli w `rawBody` jest token (jak z `/user/log`). */
@@ -45,12 +47,11 @@ export class Login {
     this.http.post<TokenDto>('/user/log', user).subscribe({
       next: (response) => {
         if (!this.tryFinishLogin(this.username, response)) {
-          alert('Niepoprawny login lub hasło');
+          this.notify.show('Niepoprawny login lub hasło', 'error');
         }
       },
-      error: (err) => {
-        console.error(err);
-        alert('Błąd logowania');
+      error: () => {
+        this.notify.show('Błąd logowania', 'error');
       }
     });
   }
@@ -65,12 +66,11 @@ export class Login {
     this.http.post<TokenDto>('/user/register', data).subscribe({
       next: (response) => {
         if (!this.tryFinishLogin(this.username, response)) {
-          alert('Rejestracja nie zwróciła tokenów — sprawdź odpowiedź serwisu.');
+          this.notify.show('Rejestracja nie zwróciła tokenów — sprawdź odpowiedź serwisu.', 'error');
         }
       },
-      error: (err) => {
-        console.error('Błąd rejestracji', err);
-        alert('Błąd rejestracji — sprawdź dane lub czy login jest wolny.');
+      error: () => {
+        this.notify.show('Błąd rejestracji — sprawdź dane lub czy login jest wolny.', 'error');
       }
     });
   }

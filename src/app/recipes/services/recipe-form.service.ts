@@ -85,21 +85,9 @@ export class RecipeFormService {
       base['stepDtoList'] = stepDtos;
     };
 
-    if (isEdit) {
-      setTags();
-      setIngredients();
-      setSteps();
-    } else {
-      if (tagDtos.length > 0) {
-        setTags();
-      }
-      if (ingredientDtos.length > 0) {
-        setIngredients();
-      }
-      if (stepDtos.length > 0) {
-        setSteps();
-      }
-    }
+    setTags();
+    setIngredients();
+    setSteps();
 
     return base;
   }

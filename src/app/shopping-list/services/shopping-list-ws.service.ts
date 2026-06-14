@@ -52,11 +52,9 @@ export class ShoppingListWsService {
     const token = this.tokenService.getToken();
     const userName = this.tokenService.getUserName();
     if (!token) {
-      console.error('Brak tokena! Nie można połączyć się z WebSocket.');
       return;
     }
     if (!userName) {
-      console.warn('Brak nazwy użytkownika — użytkownik nie będzie przekazany w PARA (zaloguj się ponownie).');
     }
 
     this.ws.setToken(token);
@@ -73,7 +71,6 @@ export class ShoppingListWsService {
         try {
           message = this.parseWsPayload(raw);
         } catch (e) {
-          console.error('WebSocket: niepoprawny komunikat', e, raw);
           return;
         }
         switch (message.command) {
@@ -90,29 +87,20 @@ export class ShoppingListWsService {
               if (this.sessionId) {
                 this.scheduleSynchronizeAfterPipNotification();
               } else {
-                console.warn('[WebSocket] PIP: brak sessionId — pomijam synchronize (poczekaj na CONNECTED).');
               }
               break;
             }
 
             if (this.isSynchronizeDestination(dest, syncDest, syncTopicSuffix)) {
-              console.log('[WebSocket] synchronizeData', message);
               const body = message.headers.BODY;
               if (!body) {
-                console.warn('[WebSocket] synchronizeData: pusty BODY', { dest, naglowki: message.headers });
                 break;
               }
               try {
                 const allDto = parseAllDtoFromWsBody(body);
                 this.state.applySynchronizePayload(allDto);
-                console.log('[WebSocket] Zaktualizowano listę z odpowiedzi synchronizeData', {
-                  dest,
-                  kategorie: allDto.categoryDtoList.length,
-                  pozycje: allDto.shoppingItemDtoList.length,
-                  jednostki: allDto.amountTypeDtoList.length
-                });
               } catch (e) {
-                console.error('WebSocket: błąd parsowania BODY synchronizeData', e);
+                void e;
               }
               break;
             }
@@ -124,7 +112,6 @@ export class ShoppingListWsService {
               try {
                 this.dispatchCrudTopicMessage(crudTail, bodyCrud);
               } catch (e) {
-                console.error('[WebSocket] CRUD topic — błąd parsowania / aplikacji', crudTail, e);
               }
               break;
             }
@@ -256,7 +243,6 @@ export class ShoppingListWsService {
 
   sendSynchronizeRequest(userName: string | null): void {
     if (!this.sessionId) {
-      console.warn('Synchronize: brak id sesji — pomijam żądanie');
       return;
     }
     const payload = this.state.buildClientAllDtoForServer();
@@ -270,12 +256,10 @@ export class ShoppingListWsService {
 
   sendPutCategory(category: Category, userName: string | null): void {
     if (!this.sessionId) {
-      console.warn('putCategory: brak id sesji');
       return;
     }
     const u = userName?.trim();
     if (!u) {
-      console.warn('putCategory: brak userName');
       return;
     }
     const dest = this.getPutCategoryUrl();
@@ -285,12 +269,10 @@ export class ShoppingListWsService {
 
   sendPostCategory(category: Category, userName: string | null): void {
     if (!this.sessionId) {
-      console.warn('postCategory: brak id sesji');
       return;
     }
     const u = userName?.trim();
     if (!u) {
-      console.warn('postCategory: brak userName');
       return;
     }
     const dest = this.getPostCategoryUrl();
@@ -300,12 +282,10 @@ export class ShoppingListWsService {
 
   sendDeleteCategory(category: Category, userName: string | null): void {
     if (!this.sessionId) {
-      console.warn('deleteCategory: brak id sesji');
       return;
     }
     const u = userName?.trim();
     if (!u) {
-      console.warn('deleteCategory: brak userName');
       return;
     }
     const dest = this.getDeleteCategoryUrl();
@@ -315,12 +295,10 @@ export class ShoppingListWsService {
 
   sendPutAmountType(unit: AmountType, userName: string | null): void {
     if (!this.sessionId) {
-      console.warn('putAmountType: brak id sesji');
       return;
     }
     const u = userName?.trim();
     if (!u) {
-      console.warn('putAmountType: brak userName');
       return;
     }
     const dest = this.getPutAmountTypeUrl();
@@ -330,12 +308,10 @@ export class ShoppingListWsService {
 
   sendPostAmountType(unit: AmountType, userName: string | null): void {
     if (!this.sessionId) {
-      console.warn('postAmountType: brak id sesji');
       return;
     }
     const u = userName?.trim();
     if (!u) {
-      console.warn('postAmountType: brak userName');
       return;
     }
     const dest = this.getPostAmountTypeUrl();
@@ -345,12 +321,10 @@ export class ShoppingListWsService {
 
   sendDeleteAmountType(unit: AmountType, userName: string | null): void {
     if (!this.sessionId) {
-      console.warn('deleteAmountType: brak id sesji');
       return;
     }
     const u = userName?.trim();
     if (!u) {
-      console.warn('deleteAmountType: brak userName');
       return;
     }
     const dest = this.getDeleteAmountTypeUrl();
@@ -360,12 +334,10 @@ export class ShoppingListWsService {
 
   sendPutShoppingItem(item: ShoppingItem, userName: string | null): void {
     if (!this.sessionId) {
-      console.warn('putShoppingItem: brak id sesji');
       return;
     }
     const u = userName?.trim();
     if (!u) {
-      console.warn('putShoppingItem: brak userName');
       return;
     }
     const dest = this.getPutShoppingItemUrl();
@@ -375,12 +347,10 @@ export class ShoppingListWsService {
 
   sendPostShoppingItem(item: ShoppingItem, userName: string | null): void {
     if (!this.sessionId) {
-      console.warn('postShoppingItem: brak id sesji');
       return;
     }
     const u = userName?.trim();
     if (!u) {
-      console.warn('postShoppingItem: brak userName');
       return;
     }
     const dest = this.getPostShoppingItemUrl();
@@ -390,12 +360,10 @@ export class ShoppingListWsService {
 
   sendDeleteShoppingItem(item: ShoppingItem, userName: string | null): void {
     if (!this.sessionId) {
-      console.warn('deleteShoppingItem: brak id sesji');
       return;
     }
     const u = userName?.trim();
     if (!u) {
-      console.warn('deleteShoppingItem: brak userName');
       return;
     }
     const dest = this.getDeleteShoppingItemUrl();

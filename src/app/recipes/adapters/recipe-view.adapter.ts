@@ -128,6 +128,28 @@ export class RecipeViewAdapter {
     return this.getStringArray(recipe, keys);
   }
 
+  getRecipeOwner(recipe: RecipeDto): string | null {
+    const r = recipe as Record<string, unknown>;
+    const keys = [
+      'userName',
+      'source',
+      'createdBy',
+      'owner',
+      'author',
+      'createdByName',
+      'recipeOwner',
+      'authorName',
+      'ownerName'
+    ];
+    for (const key of keys) {
+      const v = r[key];
+      if (typeof v === 'string' && v.trim()) {
+        return v.trim();
+      }
+    }
+    return null;
+  }
+
   readRecipePublicFlag(recipe: RecipeDto): boolean {
     const keys = ['published', 'isPublic', 'publicRecipe', 'isPublished', 'publiczny', 'public'];
     for (const key of keys) {

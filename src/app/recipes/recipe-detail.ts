@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { RecipeViewAdapter, RecipeIngredientRow } from './adapters/recipe-view.adapter';
 import { RecipeDto } from './models/recipe-dto.model';
 import { RecipesService } from './recipes.service';
+import { NotificationService } from '../core/services/notification';
 
 export type { RecipeIngredientRow };
 
@@ -20,6 +21,7 @@ export class RecipeDetail implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly recipesService = inject(RecipesService);
+  private readonly notify = inject(NotificationService);
   private readonly view = inject(RecipeViewAdapter);
 
   recipe: RecipeDto | null = null;
@@ -64,8 +66,8 @@ export class RecipeDetail implements OnInit, OnDestroy {
         this.recipe = this.view.unwrapRecipeObject(recipe);
         this.isLoading = false;
       },
-      error: err => {
-        console.error('RecipeDetail load error:', err);
+      error: () => {
+        this.notify.show('Nie udało się pobrać przepisu.', 'error');
         this.errorMessage = 'Nie udało się pobrać przepisu.';
         this.isLoading = false;
       }

@@ -5,7 +5,7 @@
     </div>
 
     <p
-      *ngIf="data.shoppingItems().filter(i => i.bought && i.sendToBought).length === 0"
+      *ngIf="data.shoppingItems().filter(i => i.bought && i.sendToBought && !i.deleted).length === 0"
       class="empty-state"
     >
       Brak zakupionych pozycji.

@@ -4,11 +4,13 @@ import { HttpClient } from '@angular/common/http';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TokenService } from './core/services/token.service';
 import { ShoppingListDataService } from './shopping-list/services/shopping-list-data.service';
+import { NotificationService } from './core/services/notification';
+import { NotificationBanner } from './core/components/notification-banner';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-root',
-  imports: [NgIf, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [NgIf, RouterOutlet, RouterLink, RouterLinkActive, NotificationBanner],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -17,6 +19,7 @@ export class App {
   private readonly http = inject(HttpClient);
   private readonly tokenService = inject(TokenService);
   private readonly shoppingListData = inject(ShoppingListDataService);
+  private readonly notify = inject(NotificationService);
   protected readonly title = signal('ShoppingListWeb');
 
   protected showMenu(): boolean {
@@ -33,9 +36,9 @@ export class App {
         await this.router.navigateByUrl('/');
         return;
       }
-      console.warn('Wylogowanie odrzucone przez backend (/user/logout != true).');
+      this.notify.show('Wylogowanie nie powiodło się', 'warn');
     } catch (err) {
-      console.error('Błąd podczas /user/logout', err);
+      this.notify.show('Błąd wylogowania', 'error');
     }
   }
 }

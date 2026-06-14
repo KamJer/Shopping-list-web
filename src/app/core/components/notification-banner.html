@@ -1,0 +1,12 @@
+<div
+  *ngIf="message$ | async as msg"
+  class="notification-banner"
+  [class.notification-banner--error]="msg.type === 'error'"
+  [class.notification-banner--warn]="msg.type === 'warn'"
+  [class.notification-banner--success]="msg.type === 'success'"
+  [class.notification-banner--info]="msg.type === 'info'"
+  role="alert"
+>
+  <span class="notification-banner__text">{{ msg.text }}</span>
+  <button type="button" class="notification-banner__close" (click)="dismiss()" aria-label="Zamknij">&times;</button>
+</div>

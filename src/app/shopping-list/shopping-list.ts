@@ -55,7 +55,7 @@ export class ShoppingList implements OnInit {
 
   visibleItemsForCategory(category: Category): ShoppingItem[] {
     const items = this.data.itemsForCategory(category);
-    return items.filter(i => !i.sendToBought);
+    return items.filter(i => !i.sendToBought && !i.deleted);
   }
 
   readonly trackByCategory = (_index: number, c: Category): string =>

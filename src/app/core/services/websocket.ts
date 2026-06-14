@@ -1,7 +1,8 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { Subject } from 'rxjs';
 import { TokenService } from './token.service';
+import { NotificationService } from './notification';
 
 export enum Command {
   CONNECT = 'CONNECT',
@@ -29,6 +30,7 @@ export interface WsMessage {
 })
 export class WebSocketService {
 
+  private readonly notify = inject(NotificationService);
   private socket$: WebSocketSubject<unknown> | undefined;
   public messages$ = new Subject<any>();
   private token: string | null = null;
@@ -50,7 +52,7 @@ export class WebSocketService {
     }
 
     if (!this.token) {
-      console.error("Brak tokena! Nie można połączyć się z WebSocket.");
+      this.notify.show('Błąd połączenia — spróbuj odświeżyć stronę', 'error');
       return;
     }
 
@@ -67,7 +69,7 @@ export class WebSocketService {
         // WebSocket callbacks may run outside Angular zone; UI that depends on messages won't update otherwise.
         this.ngZone.run(() => this.messages$.next(msg));
       },
-      error: err => console.error('WebSocket error:', err)
+      error: () => this.notify.show('Błąd połączenia czasu rzeczywistego', 'error')
     });
 
     const message: WsMessage = {
@@ -80,7 +82,6 @@ export class WebSocketService {
   sendMessage(message: WsMessage) {
     const socket = this.socket$;
     if (!socket) {
-      console.error("WebSocket nie jest połączony");
       return;
     }
     socket.next(message);

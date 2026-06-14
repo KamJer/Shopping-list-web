@@ -1,0 +1,65 @@
+.notification-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+  animation: slideDown 0.25s ease-out;
+}
+
+.notification-banner--error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.notification-banner--warn {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.notification-banner--success {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.notification-banner--info {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.notification-banner__text {
+  flex: 1;
+}
+
+.notification-banner__close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 0 0 12px;
+  line-height: 1;
+  opacity: 0.6;
+  color: inherit;
+}
+
+.notification-banner__close:hover {
+  opacity: 1;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -195,7 +195,7 @@ export class ShoppingListStateService {
 
   itemsForCategory(category: Category): ShoppingItem[] {
     const key = this.getCategoryKeyForItem(category);
-    return this.shoppingItems().filter(i => i.itemCategoryId === key);
+    return this.shoppingItems().filter(i => i.itemCategoryId === key && !i.deleted);
   }
 
   trackCategory(_index: number, c: Category): string {
@@ -323,8 +323,11 @@ export class ShoppingListStateService {
 
   private readModifyState(value: unknown, deleted: boolean): ModifyState {
     if (typeof value === 'number') {
-      if (value === ModifyState.INSERT || value === ModifyState.UPDATE || value === ModifyState.DELETE || value === ModifyState.NONE) {
+      if (value === ModifyState.INSERT || value === ModifyState.UPDATE || value === ModifyState.DELETE) {
         return value;
+      }
+      if (value === ModifyState.NONE) {
+        return deleted ? ModifyState.DELETE : value;
       }
       return deleted ? ModifyState.DELETE : ModifyState.NONE;
     }
