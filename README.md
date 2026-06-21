@@ -15,6 +15,32 @@ Part of a microservice ecosystem including a backend, auth service, recipe servi
 - **HTTPS support** – forwarded-headers interceptor prevents mixed-content issues behind reverse proxy
 - **Multi-tab sync** – token and username changes propagate across browser tabs
 
+## Screenshots
+
+### 1. Login & Registration
+
+![Login screen](screenshots/log_screen.PNG)
+
+To create an account, enter your desired username and password, then click **Zarejestruj się** (Register). If you already have an account, enter your credentials and click **Zaloguj się** (Log in). Passwords are securely stored and must be between 8 and 64 characters long.
+
+### 2. Shopping List
+
+![Shopping list](screenshots/list_screen.PNG)
+
+After logging in, you are taken to your main shopping list. Use the **+** buttons to add categories and items. Check off purchased items with the checkbox and click **Send to bought** to move them to the history view. Drag items to reorder them within their category.
+
+### 3. Measurement Units
+
+![Units management](screenshots/units_screen.PNG)
+
+Manage measurement units like pieces (szt.), kilograms (kg), or liters (l). Add new units, rename existing ones, or remove them. Deleting a unit that is already assigned to items will prompt you to reassign those items to another unit.
+
+### 4. Recipes
+
+![Recipes](screenshots/recipee_screen.PNG)
+
+Browse recipes with paginated search — filter by name, ingredients, or tags. Create your own recipes using the full editor with dynamic fields for tags, ingredients, and steps. Set a recipe as public or keep it private, and add ingredients directly to your shopping list with a single click.
+
 ## Architecture
 
 Standalone Angular components with signals-based state management.
