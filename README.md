@@ -1,39 +1,132 @@
-# Shopping List Web
+# ShoppingListWeb
 
-Frontend for a shopping-list application — an SPA that talks to separate user and recipe services and a WebSocket endpoint for real-time synchronization.
+Angular SPA for shopping list management with real-time WebSocket synchronization.
+Part of a microservice ecosystem including a backend, auth service, recipe service, and an Android app.
 
-## What this project is
+## Features
 
-**Shopping List Web** is the presentation layer (Angular client) for a shopping-list ecosystem: sign-in, product list, units, purchase history, and a recipes module. The app does not ship its own API — it expects backends to be running at known URLs (see [Backend and proxy](#backend-and-proxy)).
+- **Authentication** – login and registration with JWT Bearer tokens; HttpOnly refresh cookie with auto-refresh on startup and on 401
+- **Shopping list** – full CRUD for categories and items with checkboxes, bought-to-history flow, category reordering and collapse
+- **Real-time sync** – WebSocket with custom framed protocol (CONNECT, SUBSCRIBE, MESSAGE); per-topic CRUD dispatching and pip-change notifications
+- **Units** – manage measurement units (add, edit, delete)
+- **Bought items** – view purchased items grouped by category, un-bought toggle, delete, Polish-locale sorting
+- **Recipes** – browse with pagination, search by name / ingredients (with maxMissing) / tags / "my recipes", detail view, full create/edit modal with tags, ingredients, steps, and public/private toggle
+- **Notifications** – toast-style banner with auto-dismiss and 4 severity levels (error, warn, success, info)
+- **HTTPS support** – forwarded-headers interceptor prevents mixed-content issues behind reverse proxy
+- **Multi-tab sync** – token and username changes propagate across browser tabs
 
-## What the application does
+## Architecture
 
-| Area | Description |
-|------|-------------|
-| **Sign-in** | Login form (`/`), `POST /user/log`, tokens (including Bearer in the `Authorization` header). |
-| **Registration** | `POST /user/register` — same body as login; response includes tokens like `/user/log`. |
-| **Shopping list** | Main list view (`/list`) with sync over **WebSocket** (`/ws`). |
-| **Units** | Managing measurement units (`/units`). |
-| **Bought** | View / handling of bought items (`/bought`). |
-| **Recipes** | Recipe list and details (`/recipes`, `/recipes/:id`) via REST **`/recipe`**… |
+Standalone Angular components with signals-based state management.
 
-Protected routes require authentication (`authGuard`); the home route for guests uses `guestGuard`.
+| Layer | Technology |
+|-------|-----------|
+| Framework | Angular 21 (standalone components) |
+| Language | TypeScript 5.9 |
+| Reactive | RxJS 7.8 (WebSocketSubject for real-time) |
+| State | Angular signals (`ShoppingListStateService`) |
+| HTTP | Angular `HttpClient` with functional interceptors |
+| Routing | Angular Router (HashLocationStrategy) |
+| Testing | Vitest 4 |
+| Formatting | Prettier |
 
-## Technology stack
+## Ecosystem (microservices)
 
-- **[Angular](https://angular.dev/)** 21 (standalone components, router, HTTP client, functional interceptors)
-- **TypeScript** ~5.9
-- **[RxJS](https://rxjs.dev/)** — streams, including WebSocket via `WebSocketSubject`
-- **[@angular/build](https://angular.dev/tools/cli/build)** — application build and dev server
-- **[Vitest](https://vitest.dev/)** — unit tests (`ng test`)
-- **Prettier** — code formatting
-- **npm** (use the version aligned with `packageManager` in `package.json`)
+The app communicates with three backend services via HTTP and WebSocket:
+
+```
+                    ┌─────────────────────┐
+                    │  ShoppingSecService  │
+                    │  (auth, port 4443)   │
+                    └──────────┬──────────┘
+                               │ REST
+          ┌────────────────────┼────────────────────┐
+          │ REST               │ REST                │ WS
+          ▼                    ▼                     ▼
+ ┌────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+ │ShoppingListWeb │ │ShoppingList      │ │ShoppingListService│
+ │(this app)      │ │(Android app)     │ │(shopping backend)│
+ │Angular 21 SPA  │ │                  │ │port 5443         │
+ └────────────────┘ └──────────────────┘ └──────────────────┘
+          │                    │
+          │                    └────────REST────────┐
+          │                                         │
+          │                              ┌──────────┴──────────┐
+          └────────REST──────────────────│ShoppingListRecipes  │
+                                         │Service (port 6443)  │
+                                         └─────────────────────┘
+```
+
+## Stack
+
+| Area | Technology |
+|------|-----------|
+| Framework | Angular 21 (`@angular/core`, `@angular/router`, `@angular/forms`, `@angular/platform-browser`) |
+| Build | `@angular/build` 21 (application builder) |
+| HTTP | Angular `HttpClient` + 3 functional interceptors |
+| Real-time | RxJS `WebSocketSubject` (custom framed protocol) |
+| State | Angular `signal()` / `computed()` / `effect()` |
+| Tests | Vitest 4 (`ng test`) |
+| Formatting | Prettier 3.8 |
+| Package | npm 11.9 |
+
+## Routes
+
+| Path | Component | Guard | Description |
+|------|-----------|-------|-------------|
+| `/` | `Login` | `guestGuard` | Login / register page |
+| `/list` | `ShoppingList` | `authGuard` | Main shopping list |
+| `/units` | `Units` | `authGuard` | Measurement units management |
+| `/bought` | `Bought` | `authGuard` | Bought items history |
+| `/recipes` | `Recipes` | `authGuard` | Recipe list with search and create/edit |
+| `/recipes/:id` | `RecipeDetail` | `authGuard` | Recipe detail view |
+
+## Authentication
+
+- **Login:** `POST /user/log` with `{ userName, password }` → receives JWT tokens
+- **Registration:** `POST /user/register` (same payload) → auto-login on success
+- **Token storage:** `localStorage` via `TokenService` with cross-tab `StorageEvent` sync
+- **Refresh:** `GET /user/refresh` (with credentials) on startup (`APP_INITIALIZER`) and on 401 (with deduplication and retry)
+- **Logout:** `GET /user/logout` → clears token, username, WebSocket, redirects to `/`
+
+## HTTP interceptors
+
+Three functional interceptors run on every outgoing request:
+
+| Interceptor | Purpose |
+|-------------|---------|
+| `auth-interceptor` | Injects `Authorization: Bearer <token>`; catches 401 and triggers token refresh with retry |
+| `forwarded-headers.interceptor` | Adds `X-Forwarded-Proto: https` and `X-Forwarded-Host` when served over HTTPS |
+| `with-credentials.interceptor` | Sets `withCredentials: true` for session cookies |
+
+## WebSocket
+
+- **Endpoint:** `ws[s]://<host>/ws?token=<JWT>` (proxied in dev via `/ws`)
+- **Protocol:** Custom framed JSON (same as ShoppingListService backend) with commands `CONNECT`, `CONNECTED`, `MESSAGE`, `SUBSCRIBE`, `SUBSCRIBED`, `UNSUBSCRIBE`, `UNSUBSCRIBED`, `ERROR`
+- **Topics subscribed:**
+  - `/synchronizeData` – full bidirectional sync with dirty-flag conflict detection
+  - `/{userName}/pip` – push notification when data has changed
+  - `/{userName}/putCategory`, `/{userName}/postCategory`, `/{userName}/deleteCategory`
+  - `/{userName}/putAmountType`, `/{userName}/postAmountType`, `/{userName}/deleteAmountType`
+  - `/{userName}/putShoppingItem`, `/{userName}/postShoppingItem`, `/{userName}/deleteShoppingItem`
+
+Incoming messages are dispatched by `ShoppingListWsService` to `ShoppingListStateService`, which applies deltas via Angular signals.
+
+## Proxy configuration (development)
+
+`proxy.conf.json` forwards requests to backend services during `ng serve`:
+
+| Path | Target |
+|------|--------|
+| `/user` | `http://localhost:4443` (ShoppingSecService) |
+| `/recipe` | `http://localhost:6443` (ShoppingListRecipesService) |
+| `/ws` | `ws://localhost:5443` (ShoppingListService) |
 
 ## Requirements
 
-- **Node.js** (LTS, e.g. 20.x or 22.x — per Angular 21 requirements)
-- **npm** (e.g. 11.x)
-- Running **backends** during local development (see below) if you need full functionality (login, list, recipes, WS)
+- **Node.js** 20.x / 22.x (LTS)
+- **npm** 11.x
+- Running backend services during development (see [Related repositories](#related-repositories))
 
 ## Installation
 
@@ -43,75 +136,13 @@ cd ShoppingListWeb
 npm install
 ```
 
-## Related backend repositories
-
-This UI expects three separate backend services. Clone and run them according to each project’s README (ports must match your environment or update `proxy.conf.json` / reverse proxy).
-
-| Repository | Role | Proxied path (dev default) |
-|------------|------|----------------------------|
-| [**RecipeService**](https://github.com/KamJer/RecipeService) | Recipes REST API | `/recipe` → `http://localhost:6443` |
-| [**Shopping-security-service**](https://github.com/KamJer/Shopping-security-service) | Users — login, tokens, refresh, logout | `/user` → `http://localhost:4443` |
-| [**shopping-list-service**](https://github.com/KamJer/shopping-list-service) | Shopping list — **WebSocket** for real-time list sync | `/ws` → `ws://localhost:5443` |
-
-## Backend and proxy
-
-In development, `npm start` runs the dev server with **`proxy.conf.json`**, which forwards:
-
-| Path | Target service (default) |
-|------|--------------------------|
-| `/user` | `http://localhost:4443` — user API (login, refresh, logout) |
-| `/recipe` | `http://localhost:6443` — recipes API |
-| `/ws` | `ws://localhost:5443` — WebSocket (list synchronization) |
-
-Without these services, some features will fail with network errors. In **production** (e.g. nginx), configure a **reverse proxy** for `/user`, `/recipe`, and `/ws` to the same internal services and serve the static build from the `browser` folder (see [Production build](#production-build)).
-
-### Shopping-security-service: registration endpoint
-
-This SPA calls **`POST /user/register`** for sign-up (same `UserRequestDto` as login: `userName`, `password`). The handler should return the **same token payload** as **`POST /user/log`** so the app can sign the user in immediately. Allow it anonymously in [**Shopping-security-service**](https://github.com/KamJer/Shopping-security-service).
-
-**`UserController.java`** (e.g. class-level `@RequestMapping("/user")`):
-
-```java
-@PostMapping("/register")
-public ResponseEntity<?> register(@Valid @RequestBody UserRequestDto user) {
-    return ResponseEntity.ok(userService.insertUserAndIssueTokens(user));
-}
-```
-
-**`WebSecurityConfiguration.java`** (inside `authorizeHttpRequests`, with your other `/user` rules):
-
-```java
-.requestMatchers(HttpMethod.POST, "/user/register").permitAll()
-```
-
-(Re-deploy the security service after changing it.)
-
-### HTTPS / Cloudflare tunnel — Mixed Content on registration
-
-If the page is served over **HTTPS** but the browser tries **`http://…:port/user`**, the request was likely **redirected** with a bad `Location` or **`location /user/`** in nginx did not match **`POST /user`** (only paths like `/user/log` did).
-
-Prefer a **prefix** `location` and pass the full URI to the upstream (no path suffix on `proxy_pass`):
-
-```nginx
-location ^~ /user {
-    proxy_pass http://127.0.0.1:9080;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-```
-
-On Spring Boot behind a reverse proxy, set **`server.forward-headers-strategy=framework`** (or `native`) so any redirects use the public **HTTPS** host, not `http://…:9080`.
-
 ## Local development
 
 ```bash
 npm start
 ```
 
-This is `ng serve` with `proxy.conf.json`. App URL: **http://localhost:4200/**
+App URL: **http://localhost:4200/**
 
 ## Production build
 
@@ -119,13 +150,7 @@ This is `ng serve` with `proxy.conf.json`. App URL: **http://localhost:4200/**
 npm run build
 ```
 
-Output goes to **`dist/ShoppingListWeb/browser/`** (including `index.html` and bundled JS/CSS). Point nginx (or another static server) `root` at that directory and add `try_files` for Angular routing, for example:
-
-```nginx
-location / {
-    try_files $uri $uri/ /index.html;
-}
-```
+Output: `dist/ShoppingListWeb/browser/` (static files for nginx or similar).
 
 ## Testing
 
@@ -133,27 +158,64 @@ location / {
 npm test
 ```
 
-Runs unit tests (Vitest) via `ng test`.
+Uses Vitest via `ng test`.
 
 ## npm scripts
 
 | Script | Description |
 |--------|-------------|
-| `npm start` | Dev server + proxy |
+| `npm start` | Dev server with proxy |
 | `npm run build` | Production build |
-| `npm run watch` | Development build in watch mode |
-| `npm test` | Unit tests |
+| `npm run watch` | Dev build in watch mode |
+| `npm test` | Unit tests (Vitest) |
 
-## Repository structure (overview)
+## Project structure
 
-- `src/app/` — components, routes, guards, interceptors, services (including WebSocket, tokens)
-- `src/app/login/` — authentication
-- `src/app/shopping-list/` — shopping list and WS integration
-- `src/app/recipes/` — recipes
-- `src/app/units/`, `src/app/bought/` — units and bought items
-- `public/` — static assets
-- `proxy.conf.json` — proxy for `ng serve` only
+```
+src/app/
+├── core/                  # Guards, interceptors, services, models
+│   ├── auth/              # Token refresh logic
+│   ├── components/        # Notification banner
+│   ├── guards/            # authGuard, guestGuard
+│   ├── interceptors/      # auth, forwarded-headers, with-credentials
+│   ├── models/            # User, TokenDto
+│   └── services/          # WebSocket, token, notification, auth bootstrap
+├── login/                 # Login / register page
+├── shopping-list/         # Shopping list (state, WS, models, utils)
+├── recipes/               # Recipe list, detail, create/edit, service, adapters
+├── bought/                # Bought items history
+├── units/                 # Measurement units management
+└── static-page/           # Generic static page (unused / orphan)
+```
+
+## Related repositories
+
+### Client applications
+
+| Repository | Description |
+|------------|-------------|
+| [**Shopping-List-Client**](https://github.com/KamJer/Shopping-List-Client) | Android application |
+
+### Backend services
+
+| Repository | Description |
+|------------|-------------|
+| [**shopping-list-service**](https://github.com/KamJer/shopping-list-service) | Shopping list backend with WebSocket sync |
+| [**Shopping-security-service**](https://github.com/KamJer/Shopping-security-service) | Auth microservice: JWT, login, registration, refresh |
+| [**RecipeService**](https://github.com/KamJer/RecipeService) | Recipe microservice |
 
 ---
 
-*Originally scaffolded with Angular CLI; this README reflects the current feature set and deployment notes.*
+## Privacy Policy
+
+Detailed information about data processing can be found here:
+[Privacy Policy](PRIVACY_POLICY.md)
+
+## Account Deletion
+
+If you want to delete your account and associated data, follow the instructions here:
+[Account Deletion](ACCOUNT_DELETION.md)
+
+## Contact
+
+For questions or concerns: [kamjersoft@gmail.com](mailto:kamjersoft@gmail.com)
