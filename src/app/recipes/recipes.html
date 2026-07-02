@@ -187,13 +187,22 @@
           *ngFor="let row of createTagRows; let i = index; trackBy: trackCreateRowId"
           class="recipe-dynamic-row"
         >
-          <input
-            type="text"
-            class="recipe-edit-input recipe-dynamic-input"
-            [(ngModel)]="row.value"
-            [name]="'tag-' + row.id"
-            placeholder="np. wegetariańskie"
-          />
+          <div class="tag-autocomplete-wrapper">
+            <input
+              type="text"
+              class="recipe-edit-input recipe-dynamic-input"
+              [(ngModel)]="row.value"
+              [name]="'tag-' + row.id"
+              placeholder="np. wegetariańskie"
+              (input)="onTagInput(row, row.value)"
+              (blur)="onTagBlur(row)"
+            />
+            <ul class="tag-suggestions" *ngIf="row.showSuggestions">
+              <li *ngFor="let tag of row.suggestions" (mousedown)="selectSuggestion(row, tag)">
+                {{ tag.name }}
+              </li>
+            </ul>
+          </div>
           <button
             type="button"
             class="recipe-icon-btn recipe-icon-btn-delete recipe-row-remove"

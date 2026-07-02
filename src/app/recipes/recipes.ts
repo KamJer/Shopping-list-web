@@ -10,6 +10,7 @@ import { RecipeRequestDto } from './models/recipe-request-dto.model';
 import { TagDto } from './models/tag-dto.model';
 import { PageResult } from './models/page-result.model';
 import { RecipeFormService } from './services/recipe-form.service';
+import { TagsService } from './services/tags.service';
 import { NotificationService } from '../core/services/notification';
 import { TokenService } from '../core/services/token.service';
 
@@ -25,6 +26,7 @@ export class Recipes implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly view = inject(RecipeViewAdapter);
   private readonly form = inject(RecipeFormService);
+  private readonly tagsService = inject(TagsService);
   private readonly notify = inject(NotificationService);
   private readonly tokenService = inject(TokenService);
 
@@ -43,11 +45,14 @@ export class Recipes implements OnInit {
   maxMissing = 0;
   tagsText = '';
 
+  allTags: TagDto[] = [];
+  private tagsLoaded = false;
+
   recipeFormEditSource: RecipeDto | null = null;
   showRecipeFormModal = false;
   newTitle = '';
   newDescription = '';
-  createTagRows: { id: number; value: string }[] = [];
+  createTagRows: { id: number; value: string; suggestions: TagDto[]; showSuggestions: boolean }[] = [];
   createIngredientRows: { id: number; productName: string; amount: string; unitType: string }[] = [];
   createStepRows: { id: number; stepNumber: string; value: string }[] = [];
   recipeIsPublic = false;
@@ -79,6 +84,7 @@ export class Recipes implements OnInit {
   openCreateRecipe(): void {
     this.recipeFormEditSource = null;
     this.resetCreateForm();
+    this.loadTags();
     this.showRecipeFormModal = true;
     this.cdr.markForCheck();
   }
@@ -103,11 +109,47 @@ export class Recipes implements OnInit {
   }
 
   addTagField(): void {
-    this.createTagRows.push({ id: this.nextCreateRowId++, value: '' });
+    this.createTagRows.push({ id: this.nextCreateRowId++, value: '', suggestions: [], showSuggestions: false });
   }
 
   removeTagField(index: number): void {
     this.createTagRows.splice(index, 1);
+  }
+
+  private loadTags(): void {
+    if (this.tagsLoaded) {
+      return;
+    }
+    this.tagsService.getAll().subscribe({
+      next: tags => {
+        this.allTags = tags;
+        this.tagsLoaded = true;
+      },
+      error: () => {
+        this.allTags = [];
+      }
+    });
+  }
+
+  onTagInput(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean }, value: string): void {
+    const query = (value || '').toLowerCase().trim();
+    if (!query) {
+      row.suggestions = [];
+      row.showSuggestions = false;
+      return;
+    }
+    row.suggestions = this.allTags.filter(t => t.name.toLowerCase().includes(query));
+    row.showSuggestions = row.suggestions.length > 0;
+  }
+
+  onTagBlur(row: { showSuggestions: boolean }): void {
+    setTimeout(() => { row.showSuggestions = false; }, 150);
+  }
+
+  selectSuggestion(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean }, tag: TagDto): void {
+    row.value = tag.name;
+    row.suggestions = [];
+    row.showSuggestions = false;
   }
 
   addIngredientField(): void {
@@ -179,7 +221,11 @@ export class Recipes implements OnInit {
     this.newTitle = populated.title;
     this.newDescription = populated.description;
     this.recipeIsPublic = populated.recipeIsPublic;
-    this.createTagRows = populated.createTagRows;
+    this.createTagRows = populated.createTagRows.map(row => ({
+      ...row,
+      suggestions: [],
+      showSuggestions: false
+    }));
     this.createIngredientRows = populated.createIngredientRows;
     this.createStepRows = populated.createStepRows;
     this.nextCreateRowId = populated.nextRowId;
