@@ -9,6 +9,11 @@
     "secure": false,
     "changeOrigin": true
   },
+  "/tags": {
+    "target": "http://localhost:6443",
+    "secure": false,
+    "changeOrigin": true
+  },
   "/ws": {
     "target": "ws://localhost:5443",
     "ws": true,

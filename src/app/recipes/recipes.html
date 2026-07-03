@@ -141,7 +141,6 @@
   role="dialog"
   aria-modal="true"
   aria-labelledby="recipe-form-title"
-  (click)="closeRecipeForm()"
 >
   <div class="recipe-create-dialog" (click)="$event.stopPropagation()">
     <h3 id="recipe-form-title" class="recipe-edit-heading">
@@ -167,6 +166,16 @@
       placeholder="Krótki opis przepisu"
     ></textarea>
 
+    <label class="recipe-edit-label" for="form-source">Źródło</label>
+    <input
+      id="form-source"
+      class="recipe-edit-input"
+      type="text"
+      [(ngModel)]="newSource"
+      placeholder="Np. książka, strona www, własny przepis"
+      autocomplete="off"
+    />
+
     <label class="recipe-checkbox-row" for="form-recipe-public">
       <input
         id="form-recipe-public"
@@ -189,16 +198,36 @@
         >
           <div class="tag-autocomplete-wrapper">
             <input
+              #tagInput
               type="text"
               class="recipe-edit-input recipe-dynamic-input"
               [(ngModel)]="row.value"
               [name]="'tag-' + row.id"
               placeholder="np. wegetariańskie"
+              autocomplete="off"
+              role="combobox"
+              [attr.aria-expanded]="row.showSuggestions"
+              [attr.aria-controls]="'tag-suggestions-' + row.id"
+              [attr.aria-activedescendant]="row.showSuggestions && row.highlightIndex >= 0 ? 'tag-suggestion-' + row.id + '-' + row.highlightIndex : null"
               (input)="onTagInput(row, row.value)"
+              (focus)="onTagFocus(row)"
               (blur)="onTagBlur(row)"
+              (keydown)="onTagKeydown($event, row)"
             />
-            <ul class="tag-suggestions" *ngIf="row.showSuggestions">
-              <li *ngFor="let tag of row.suggestions" (mousedown)="selectSuggestion(row, tag)">
+            <ul
+              class="tag-suggestions"
+              *ngIf="row.showSuggestions"
+              [id]="'tag-suggestions-' + row.id"
+              role="listbox"
+            >
+              <li
+                *ngFor="let tag of row.suggestions; let i = index"
+                role="option"
+                [id]="'tag-suggestion-' + row.id + '-' + i"
+                [class.active]="i === row.highlightIndex"
+                (mousedown)="selectSuggestion(row, tag)"
+                (mouseenter)="setTagHighlight(row, i)"
+              >
                 {{ tag.tag }}
               </li>
             </ul>
@@ -320,6 +349,8 @@
         </li>
       </ul>
     </div>
+
+    <div *ngIf="recipeFormError" class="recipe-form-error">{{ recipeFormError }}</div>
 
     <div class="recipe-edit-actions">
       <button type="button" class="recipe-edit-cancel" (click)="closeRecipeForm()" [disabled]="isFormSaving">

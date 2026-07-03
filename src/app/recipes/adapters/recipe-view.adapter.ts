@@ -128,6 +128,16 @@ export class RecipeViewAdapter {
     return this.getStringArray(recipe, keys);
   }
 
+  getSource(recipe: RecipeDto): string {
+    return this.getFirstString(recipe, [
+      'source',
+      'recipeSource',
+      'origin',
+      'zrodlo',
+      'źródło'
+    ]);
+  }
+
   getRecipeOwner(recipe: RecipeDto): string | null {
     const r = recipe as Record<string, unknown>;
     const keys = [

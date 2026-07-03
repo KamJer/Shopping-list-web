@@ -82,6 +82,10 @@ export class RecipeDetail implements OnInit, OnDestroy {
     return this.view.getDescription(recipe);
   }
 
+  getSource(recipe: RecipeDto): string {
+    return this.view.getSource(recipe);
+  }
+
   getTags(recipe: RecipeDto): string[] {
     return this.view.getTags(recipe);
   }

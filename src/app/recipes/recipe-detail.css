@@ -39,6 +39,13 @@
   font-size: 1rem;
 }
 
+.recipe-detail-source {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+  font-style: italic;
+}
+
 .detail-section {
   margin-bottom: 0;
 }

@@ -6,7 +6,7 @@ import { TagDto } from '../models/tag-dto.model';
 
 @Injectable({ providedIn: 'root' })
 export class TagsService {
-  private readonly url = 'http://localhost:8080/tags';
+  private readonly url = '/tags';
 
   constructor(private http: HttpClient) {}
 

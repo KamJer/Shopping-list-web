@@ -24,6 +24,7 @@ export interface RecipeFormStepRow {
 export interface RecipeFormPopulateResult {
   title: string;
   description: string;
+  source: string;
   recipeIsPublic: boolean;
   createTagRows: RecipeFormTagRow[];
   createIngredientRows: RecipeFormIngredientRow[];
@@ -39,6 +40,7 @@ export class RecipeFormService {
   buildPayload(input: {
     title: string;
     description: string;
+    source: string;
     isPublic: boolean;
     editSource: RecipeDto | null;
     tagRows: RecipeFormTagRow[];
@@ -69,6 +71,8 @@ export class RecipeFormService {
     base['opis'] = description;
     base['recipeDescription'] = description;
 
+    base['source'] = input.source;
+
     this.applyPublicationFlags(base, input.isPublic);
 
     const setTags = (): void => {
@@ -97,6 +101,7 @@ export class RecipeFormService {
 
     const title = this.view.getRecipeName(recipe);
     const description = this.view.getDescriptionPlain(recipe);
+    const source = this.view.getSource(recipe);
     const recipeIsPublic = this.view.readRecipePublicFlag(recipe);
 
     const tagStrings = this.view.getTags(recipe);
@@ -120,6 +125,7 @@ export class RecipeFormService {
     return {
       title,
       description,
+      source,
       recipeIsPublic,
       createTagRows,
       createIngredientRows,

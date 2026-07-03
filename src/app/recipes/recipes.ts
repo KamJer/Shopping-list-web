@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ChangeDetectorRef, inject, OnInit } from '@angular/core';
+import { Component, ChangeDetectorRef, ElementRef, HostListener, inject, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -52,12 +52,16 @@ export class Recipes implements OnInit {
   showRecipeFormModal = false;
   newTitle = '';
   newDescription = '';
-  createTagRows: { id: number; value: string; suggestions: TagDto[]; showSuggestions: boolean }[] = [];
+  newSource = '';
+  createTagRows: { id: number; value: string; suggestions: TagDto[]; showSuggestions: boolean; highlightIndex: number }[] = [];
   createIngredientRows: { id: number; productName: string; amount: string; unitType: string }[] = [];
   createStepRows: { id: number; stepNumber: string; value: string }[] = [];
   recipeIsPublic = false;
   isFormSaving = false;
+  recipeFormError: string | null = null;
   private nextCreateRowId = 1;
+
+  @ViewChildren('tagInput') tagInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
   ngOnInit(): void {
     Promise.resolve().then(() => this.load(true));
@@ -98,18 +102,37 @@ export class Recipes implements OnInit {
     this.resetCreateForm();
   }
 
+  @HostListener('document:keydown', ['$event'])
+  onFormKeydown(ev: KeyboardEvent): void {
+    if (!this.showRecipeFormModal) {
+      return;
+    }
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.closeRecipeForm();
+    }
+  }
+
   private resetCreateForm(): void {
     this.newTitle = '';
     this.newDescription = '';
+    this.newSource = '';
     this.createTagRows = [];
     this.createIngredientRows = [];
     this.createStepRows = [];
     this.recipeIsPublic = false;
+    this.recipeFormError = null;
     this.nextCreateRowId = 1;
   }
 
   addTagField(): void {
-    this.createTagRows.push({ id: this.nextCreateRowId++, value: '', suggestions: [], showSuggestions: false });
+    this.createTagRows.push({ id: this.nextCreateRowId++, value: '', suggestions: [], showSuggestions: false, highlightIndex: -1 });
+    setTimeout(() => {
+      const inputs = this.tagInputs?.toArray();
+      if (inputs && inputs.length > 0) {
+        inputs[inputs.length - 1].nativeElement.focus();
+      }
+    });
   }
 
   removeTagField(index: number): void {
@@ -124,32 +147,95 @@ export class Recipes implements OnInit {
       next: tags => {
         this.allTags = tags;
         this.tagsLoaded = true;
+        for (const row of this.createTagRows) {
+          if (!row.value?.trim()) {
+            this.onTagInput(row, '', true);
+          }
+        }
       },
-      error: () => {
+      error: err => {
+        console.warn('Nie udało się pobrać listy tagów (autocomplete wyłączony):', err);
         this.allTags = [];
       }
     });
   }
 
-  onTagInput(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean }, value: string): void {
+  onTagInput(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean; highlightIndex: number }, value: string, force = false): void {
     const query = (value || '').toLowerCase().trim();
-    if (!query) {
+    const selectedElsewhere = new Set(
+      this.createTagRows
+        .filter(r => r !== row)
+        .map(r => r.value.trim().toLowerCase())
+        .filter(Boolean)
+    );
+    if (!query && !force) {
       row.suggestions = [];
       row.showSuggestions = false;
+      row.highlightIndex = -1;
       return;
     }
-    row.suggestions = this.allTags.filter(t => t.tag.toLowerCase().includes(query));
+    row.suggestions = this.allTags.filter(t => {
+      const name = t.tag.toLowerCase();
+      if (query && !name.includes(query)) {
+        return false;
+      }
+      if (selectedElsewhere.has(name)) {
+        return false;
+      }
+      return true;
+    });
     row.showSuggestions = row.suggestions.length > 0;
+    row.highlightIndex = row.suggestions.length > 0 ? 0 : -1;
+  }
+
+  onTagFocus(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean; highlightIndex: number }): void {
+    this.onTagInput(row, row.value, true);
   }
 
   onTagBlur(row: { showSuggestions: boolean }): void {
     setTimeout(() => { row.showSuggestions = false; }, 150);
   }
 
-  selectSuggestion(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean }, tag: TagDto): void {
+  onTagKeydown(
+    ev: KeyboardEvent,
+    row: { value: string; suggestions: TagDto[]; showSuggestions: boolean; highlightIndex: number }
+  ): void {
+    if (!row.showSuggestions || row.suggestions.length === 0) {
+      if (ev.key === 'ArrowDown' || ev.key === 'Enter') {
+        this.onTagInput(row, row.value);
+      }
+      return;
+    }
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      row.highlightIndex = (row.highlightIndex + 1) % row.suggestions.length;
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      row.highlightIndex = row.highlightIndex <= 0 ? row.suggestions.length - 1 : row.highlightIndex - 1;
+    } else if (ev.key === 'Enter') {
+      if (row.highlightIndex >= 0 && row.highlightIndex < row.suggestions.length) {
+        ev.preventDefault();
+        this.selectSuggestion(row, row.suggestions[row.highlightIndex]);
+      }
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      row.showSuggestions = false;
+      row.highlightIndex = -1;
+    }
+  }
+
+  setTagHighlight(
+    row: { highlightIndex: number; suggestions: TagDto[] },
+    index: number
+  ): void {
+    row.highlightIndex = index;
+  }
+
+  selectSuggestion(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean; highlightIndex: number }, tag: TagDto): void {
     row.value = tag.tag;
     row.suggestions = [];
     row.showSuggestions = false;
+    row.highlightIndex = -1;
   }
 
   addIngredientField(): void {
@@ -191,6 +277,7 @@ export class Recipes implements OnInit {
     const payload = this.form.buildPayload({
       title: this.newTitle,
       description: this.newDescription,
+      source: this.newSource,
       isPublic: this.recipeIsPublic,
       editSource: this.recipeFormEditSource,
       tagRows: this.createTagRows,
@@ -204,8 +291,11 @@ export class Recipes implements OnInit {
         this.closeRecipeForm();
         this.load();
       },
-      error: () => {
-        this.notify.show('Nie udało się zapisać przepisu', 'error');
+      error: (err: unknown) => {
+        const httpErr = err as { status?: number; error?: string };
+        this.recipeFormError = httpErr.status === 409 && httpErr.error
+          ? httpErr.error
+          : 'Nie udało się zapisać przepisu';
         this.isFormSaving = false;
         this.cdr.markForCheck();
       }
@@ -220,11 +310,13 @@ export class Recipes implements OnInit {
     const populated = this.form.populateFromRecipe(recipe, this.nextCreateRowId);
     this.newTitle = populated.title;
     this.newDescription = populated.description;
+    this.newSource = populated.source;
     this.recipeIsPublic = populated.recipeIsPublic;
     this.createTagRows = populated.createTagRows.map(row => ({
       ...row,
       suggestions: [],
-      showSuggestions: false
+      showSuggestions: false,
+      highlightIndex: -1
     }));
     this.createIngredientRows = populated.createIngredientRows;
     this.createStepRows = populated.createStepRows;

@@ -562,6 +562,11 @@
   background: #eef2f9;
 }
 
+.tag-suggestions li.active {
+  background: #dbe5f5;
+  color: #1f2937;
+}
+
 .pagination {
   display: flex;
   align-items: center;
@@ -594,4 +599,16 @@
 .page-info {
   color: #4f5869;
   font-weight: 600;
+}
+
+.recipe-form-error {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: pre-line;
 }

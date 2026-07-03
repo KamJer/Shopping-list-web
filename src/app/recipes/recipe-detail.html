@@ -16,6 +16,11 @@
           <p *ngIf="!getDescription(recipe)" class="detail-empty">Brak opisu.</p>
         </section>
 
+        <div *ngIf="getSource(recipe) as source" class="detail-section detail-section--block">
+          <h2 class="detail-section-title">Źródło</h2>
+          <p class="recipe-detail-source">{{ source }}</p>
+        </div>
+
         <section class="detail-section detail-section--block">
           <h2 class="detail-section-title">Tagi</h2>
           <div *ngIf="getTags(recipe).length > 0" class="tag-list">
