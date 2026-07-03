@@ -11,8 +11,6 @@ export class TagsService {
   constructor(private http: HttpClient) {}
 
   getAll(): Observable<TagDto[]> {
-    return this.http.get<{ tag: string }[]>(this.url).pipe(
-      map(response => response.map(item => ({ name: item.tag })))
-    );
+    return this.http.get<TagDto[]>(this.url);
   }
 }

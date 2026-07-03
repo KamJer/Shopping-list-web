@@ -52,7 +52,7 @@ export class RecipeFormService {
     const tagDtos: TagDto[] = input.tagRows
       .map(r => r.value.trim())
       .filter(Boolean)
-      .map(name => ({ name }));
+      .map(name => ({ tag: name }));
 
     const ingredientDtos = input.ingredientRows
       .map(row => this.buildIngredientDto(row))
@@ -73,7 +73,6 @@ export class RecipeFormService {
 
     const setTags = (): void => {
       base['tags'] = tagDtos;
-      base['tagDtoList'] = tagDtos;
     };
     const setIngredients = (): void => {
       base['ingredients'] = ingredientDtos;

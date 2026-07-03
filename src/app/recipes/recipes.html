@@ -199,7 +199,7 @@
             />
             <ul class="tag-suggestions" *ngIf="row.showSuggestions">
               <li *ngFor="let tag of row.suggestions" (mousedown)="selectSuggestion(row, tag)">
-                {{ tag.name }}
+                {{ tag.tag }}
               </li>
             </ul>
           </div>

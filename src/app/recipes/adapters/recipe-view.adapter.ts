@@ -225,7 +225,7 @@ export class RecipeViewAdapter {
         continue;
       }
       if (isRecord(item)) {
-        const label = item['name'] ?? item['tagName'] ?? item['label'] ?? item['title'] ?? item['text'];
+        const label = item['tag'] ?? item['name'] ?? item['tagName'] ?? item['label'] ?? item['title'] ?? item['text'];
         if (typeof label === 'string' && label.trim()) {
           out.push(label.trim());
         }

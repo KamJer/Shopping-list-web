@@ -138,7 +138,7 @@ export class Recipes implements OnInit {
       row.showSuggestions = false;
       return;
     }
-    row.suggestions = this.allTags.filter(t => t.name.toLowerCase().includes(query));
+    row.suggestions = this.allTags.filter(t => t.tag.toLowerCase().includes(query));
     row.showSuggestions = row.suggestions.length > 0;
   }
 
@@ -147,7 +147,7 @@ export class Recipes implements OnInit {
   }
 
   selectSuggestion(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean }, tag: TagDto): void {
-    row.value = tag.name;
+    row.value = tag.tag;
     row.suggestions = [];
     row.showSuggestions = false;
   }
@@ -317,7 +317,7 @@ export class Recipes implements OnInit {
       this.recipesService.getAll(pageable).subscribe({ next: handleNext, error: handleError });
       return;
     }
-    const tags: TagDto[] = tagNames.map(t => ({ name: t }));
+    const tags: TagDto[] = tagNames.map(t => ({ tag: t }));
     this.recipesService.getByTags(tags, pageable).subscribe({ next: handleNext, error: handleError });
   }
 

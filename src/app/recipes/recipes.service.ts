@@ -56,7 +56,7 @@ export class RecipesService {
   }
 
   getById(id: string | number): Observable<RecipeDto> {
-    const url = `${this.baseUrl}/${encodeURIComponent(String(id))}`;
+    const url = `${this.baseUrl}/id/${encodeURIComponent(String(id))}`;
     return this.http.get<unknown>(url).pipe(map(res => adaptSingleRecipeResponse(res)));
   }
 
