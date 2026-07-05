@@ -4,7 +4,6 @@ import { Observable, map } from 'rxjs';
 
 import { RecipeRequestDto } from './models/recipe-request-dto.model';
 import { RecipeDto } from './models/recipe-dto.model';
-import { TagDto } from './models/tag-dto.model';
 import { PageResult } from './models/page-result.model';
 import { adaptRecipePageResult, adaptSingleRecipeResponse } from './adapters/recipe-http-response.adapter';
 
@@ -38,17 +37,17 @@ export class RecipesService {
       .pipe(map(res => adaptRecipePageResult(res)));
   }
 
-  getByRequiredProducts(
-    body: RecipeRequestDto,
+  getByIngredients(
+    ingredients: string[],
     pageable: Pageable
   ): Observable<PageResult<RecipeDto>> {
-    const url = `${this.baseUrl}/products/required`;
+    const url = `${this.baseUrl}/ingredients`;
     return this.http
-      .post<unknown>(url, body, { params: this.toHttpParams(pageable) })
+      .post<unknown>(url, ingredients, { params: this.toHttpParams(pageable) })
       .pipe(map(res => adaptRecipePageResult(res)));
   }
 
-  getByTags(tags: TagDto[], pageable: Pageable): Observable<PageResult<RecipeDto>> {
+  getByTags(tags: string[], pageable: Pageable): Observable<PageResult<RecipeDto>> {
     const url = `${this.baseUrl}/tag`;
     return this.http
       .post<unknown>(url, tags, { params: this.toHttpParams(pageable) })

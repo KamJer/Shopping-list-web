@@ -17,7 +17,7 @@
       </div>
 
       <div *ngIf="mode === 'products'" class="filter-panel">
-        <label class="filter-label" for="products-text">Produkty (oddziel przecinkami)</label>
+        <label class="filter-label" for="products-text">Składniki (oddziel przecinkami)</label>
         <textarea
           id="products-text"
           class="filter-textarea"
@@ -25,17 +25,8 @@
           rows="3"
           placeholder="np. ryż, kurczak, marchew"
         ></textarea>
-
-        <label class="filter-label" for="max-missing">MaxMissing</label>
-        <input
-          id="max-missing"
-          class="filter-input"
-          type="number"
-          [(ngModel)]="maxMissing"
-          min="0"
-        />
         <p class="filter-hint">
-          POST: <code>/recipe/products/required</code> + body <code>RecipeRequestDto</code>
+          POST: <code>/recipe/ingredients</code> — wyszukiwanie FULLTEXT BOOLEAN MODE
         </p>
       </div>
 
@@ -43,7 +34,7 @@
         <label class="filter-label" for="tags-text">Tagi (oddziel przecinkami)</label>
         <input id="tags-text" class="filter-input" type="text" [(ngModel)]="tagsText" placeholder="np. wege, szybkie" />
         <p class="filter-hint">
-          POST: <code>/recipe/tag</code> + body <code>Set&lt;TagDto&gt;</code>
+          POST: <code>/recipe/tag</code> + body <code>Set&lt;String&gt;</code>
         </p>
       </div>
 
@@ -228,7 +219,7 @@
                 (mousedown)="selectSuggestion(row, tag)"
                 (mouseenter)="setTagHighlight(row, i)"
               >
-                {{ tag.tag }}
+                {{ tag }}
               </li>
             </ul>
           </div>

@@ -6,8 +6,6 @@ import { RouterLink } from '@angular/router';
 import { RecipeViewAdapter } from './adapters/recipe-view.adapter';
 import { RecipeDto } from './models/recipe-dto.model';
 import { RecipesService } from './recipes.service';
-import { RecipeRequestDto } from './models/recipe-request-dto.model';
-import { TagDto } from './models/tag-dto.model';
 import { PageResult } from './models/page-result.model';
 import { RecipeFormService } from './services/recipe-form.service';
 import { TagsService } from './services/tags.service';
@@ -42,10 +40,9 @@ export class Recipes implements OnInit {
   mode: 'all' | 'name' | 'products' | 'tags' | 'mine' = 'all';
   nameQuery = '';
   productsText = '';
-  maxMissing = 0;
   tagsText = '';
 
-  allTags: TagDto[] = [];
+  allTags: string[] = [];
   private tagsLoaded = false;
 
   recipeFormEditSource: RecipeDto | null = null;
@@ -53,7 +50,7 @@ export class Recipes implements OnInit {
   newTitle = '';
   newDescription = '';
   newSource = '';
-  createTagRows: { id: number; value: string; suggestions: TagDto[]; showSuggestions: boolean; highlightIndex: number }[] = [];
+  createTagRows: { id: number; value: string; suggestions: string[]; showSuggestions: boolean; highlightIndex: number }[] = [];
   createIngredientRows: { id: number; productName: string; amount: string; unitType: string }[] = [];
   createStepRows: { id: number; stepNumber: string; value: string }[] = [];
   recipeIsPublic = false;
@@ -160,7 +157,7 @@ export class Recipes implements OnInit {
     });
   }
 
-  onTagInput(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean; highlightIndex: number }, value: string, force = false): void {
+  onTagInput(row: { value: string; suggestions: string[]; showSuggestions: boolean; highlightIndex: number }, value: string, force = false): void {
     const query = (value || '').toLowerCase().trim();
     const selectedElsewhere = new Set(
       this.createTagRows
@@ -175,7 +172,7 @@ export class Recipes implements OnInit {
       return;
     }
     row.suggestions = this.allTags.filter(t => {
-      const name = t.tag.toLowerCase();
+      const name = t.toLowerCase();
       if (query && !name.includes(query)) {
         return false;
       }
@@ -188,7 +185,7 @@ export class Recipes implements OnInit {
     row.highlightIndex = row.suggestions.length > 0 ? 0 : -1;
   }
 
-  onTagFocus(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean; highlightIndex: number }): void {
+  onTagFocus(row: { value: string; suggestions: string[]; showSuggestions: boolean; highlightIndex: number }): void {
     this.onTagInput(row, row.value, true);
   }
 
@@ -198,7 +195,7 @@ export class Recipes implements OnInit {
 
   onTagKeydown(
     ev: KeyboardEvent,
-    row: { value: string; suggestions: TagDto[]; showSuggestions: boolean; highlightIndex: number }
+    row: { value: string; suggestions: string[]; showSuggestions: boolean; highlightIndex: number }
   ): void {
     if (!row.showSuggestions || row.suggestions.length === 0) {
       if (ev.key === 'ArrowDown' || ev.key === 'Enter') {
@@ -225,14 +222,14 @@ export class Recipes implements OnInit {
   }
 
   setTagHighlight(
-    row: { highlightIndex: number; suggestions: TagDto[] },
+    row: { highlightIndex: number; suggestions: string[] },
     index: number
   ): void {
     row.highlightIndex = index;
   }
 
-  selectSuggestion(row: { value: string; suggestions: TagDto[]; showSuggestions: boolean; highlightIndex: number }, tag: TagDto): void {
-    row.value = tag.tag;
+  selectSuggestion(    row: { value: string; suggestions: string[]; showSuggestions: boolean; highlightIndex: number }, tag: string): void {
+    row.value = tag;
     row.suggestions = [];
     row.showSuggestions = false;
     row.highlightIndex = -1;
@@ -396,11 +393,7 @@ export class Recipes implements OnInit {
         this.recipesService.getAll(pageable).subscribe({ next: handleNext, error: handleError });
         return;
       }
-      const body: RecipeRequestDto = {
-        products,
-        maxMissing: Number(this.maxMissing) || 0
-      };
-      this.recipesService.getByRequiredProducts(body, pageable).subscribe({ next: handleNext, error: handleError });
+      this.recipesService.getByIngredients(products, pageable).subscribe({ next: handleNext, error: handleError });
       return;
     }
 
@@ -409,8 +402,7 @@ export class Recipes implements OnInit {
       this.recipesService.getAll(pageable).subscribe({ next: handleNext, error: handleError });
       return;
     }
-    const tags: TagDto[] = tagNames.map(t => ({ tag: t }));
-    this.recipesService.getByTags(tags, pageable).subscribe({ next: handleNext, error: handleError });
+    this.recipesService.getByTags(tagNames, pageable).subscribe({ next: handleNext, error: handleError });
   }
 
   private applyPage(p: PageResult<RecipeDto>): void {

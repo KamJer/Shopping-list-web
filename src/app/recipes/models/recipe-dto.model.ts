@@ -1,5 +1,3 @@
-import { TagDto } from './tag-dto.model';
-
 export interface RecipeDto {
   /** Id przepisu (nazwa pola zależy od backendu, trzymamy opcjonalnie). */
   recipeId?: number;
@@ -12,7 +10,7 @@ export interface RecipeDto {
   source?: string;
 
   /** Tagi przepisu. */
-  tags?: TagDto[];
+  tags?: string[];
 
   /** Reszta pól jest zależna od backendu. */
   [key: string]: unknown;

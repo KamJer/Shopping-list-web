@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { RecipeViewAdapter } from '../adapters/recipe-view.adapter';
 import { RecipeDto } from '../models/recipe-dto.model';
-import { TagDto } from '../models/tag-dto.model';
 
 export interface RecipeFormTagRow {
   id: number;
@@ -51,10 +50,9 @@ export class RecipeFormService {
     const description = input.description.trim();
     const isEdit = input.editSource != null;
 
-    const tagDtos: TagDto[] = input.tagRows
+    const tagStrings: string[] = input.tagRows
       .map(r => r.value.trim())
-      .filter(Boolean)
-      .map(name => ({ tag: name }));
+      .filter(Boolean);
 
     const ingredientDtos = input.ingredientRows
       .map(row => this.buildIngredientDto(row))
@@ -76,7 +74,7 @@ export class RecipeFormService {
     this.applyPublicationFlags(base, input.isPublic);
 
     const setTags = (): void => {
-      base['tags'] = tagDtos;
+      base['tags'] = tagStrings;
     };
     const setIngredients = (): void => {
       base['ingredients'] = ingredientDtos;
