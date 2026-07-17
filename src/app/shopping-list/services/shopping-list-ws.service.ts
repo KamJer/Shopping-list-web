@@ -55,6 +55,7 @@ export class ShoppingListWsService {
       return;
     }
     if (!userName) {
+      return;
     }
 
     this.ws.setToken(token);
@@ -142,7 +143,6 @@ export class ShoppingListWsService {
     } else {
       this.ws.setToken(token);
       this.ws.connect();
-      this.subscribeToShoppingListTopics(userName);
     }
   }
 
