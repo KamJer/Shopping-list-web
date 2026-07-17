@@ -400,13 +400,6 @@ export class ShoppingListStateService {
     if (typeof id === 'number' && id > 0) {
       return list.findIndex(x => x.shoppingItemId === id);
     }
-    const dtoAmount = dto.amount ?? null;
-    return list.findIndex(
-      x =>
-        x.itemName === dto.itemName &&
-        x.itemCategoryId === dto.itemCategoryId &&
-        x.itemAmountTypeId === dto.itemAmountTypeId &&
-        (x.amount ?? null) === dtoAmount
-    );
+    return -1;
   }
 }
