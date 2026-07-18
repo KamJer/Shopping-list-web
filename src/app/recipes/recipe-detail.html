@@ -36,6 +36,13 @@
               <span class="ingredient-cell ingredient-name">{{ ing.name }}</span>
               <span class="ingredient-cell ingredient-amount">{{ ing.amount }}</span>
               <span class="ingredient-cell ingredient-unit">{{ ing.unit }}</span>
+              <button
+                type="button"
+                class="add-to-list-btn"
+                title="Dodaj do listy zakupów"
+                aria-label="Dodaj do listy zakupów"
+                (click)="openAddToShoppingList(ing)"
+              >+</button>
             </li>
           </ul>
           <p *ngIf="getIngredientRows(recipe).length === 0" class="detail-empty">Brak składników.</p>
@@ -54,5 +61,66 @@
     <ng-template #errorBlock>
       <p class="detail-error">{{ errorMessage || 'Przepis nie został znaleziony.' }}</p>
     </ng-template>
+  </div>
+</div>
+
+<div
+  class="dialog-backdrop"
+  *ngIf="newItemDialogOpen"
+  (click)="closeNewItemDialog()"
+  role="presentation"
+>
+  <div class="dialog-panel dialog-panel--wide" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="recipe-item-title">
+    <h3 id="recipe-item-title" class="dialog-title">Dodaj do listy zakupów</h3>
+
+    <label class="dialog-label" for="recipe-item-name">Nazwa produktu</label>
+    <input
+      id="recipe-item-name"
+      class="dialog-input"
+      type="text"
+      [(ngModel)]="newItemName"
+      autocomplete="off"
+    />
+
+    <label class="dialog-label" for="recipe-item-amount">Ilość</label>
+    <input
+      id="recipe-item-amount"
+      class="dialog-input"
+      type="number"
+      step="any"
+      min="0"
+      [(ngModel)]="newItemAmount"
+    />
+
+    <label class="dialog-label" for="recipe-item-category">Kategoria</label>
+    <select
+      id="recipe-item-category"
+      class="dialog-input dialog-select"
+      [(ngModel)]="newItemCategoryIndex"
+    >
+      <option *ngFor="let c of data.categories(); let idx = index" [ngValue]="idx">{{ c.categoryName }}</option>
+    </select>
+
+    <label class="dialog-label" for="recipe-item-amount-type">Jednostka</label>
+    <select
+      id="recipe-item-amount-type"
+      class="dialog-input dialog-select"
+      [(ngModel)]="newItemAmountTypeId"
+      [disabled]="data.amountTypes().length === 0"
+    >
+      <option [ngValue]="null" disabled>— wybierz —</option>
+      <option *ngFor="let at of data.amountTypes()" [ngValue]="data.getAmountTypeKey(at)">{{ at.typeName }}</option>
+    </select>
+    <p *ngIf="data.amountTypes().length === 0" class="dialog-hint">Brak typów ilości — zsynchronizuj listę lub dodaj jednostki.</p>
+
+    <div class="dialog-actions">
+      <button type="button" class="dialog-btn dialog-btn--secondary" (click)="closeNewItemDialog()">Anuluj</button>
+      <button
+        type="button"
+        class="dialog-btn dialog-btn--primary"
+        (click)="confirmNewItem()"
+        [disabled]="!canConfirmNewItem()"
+      >Dodaj</button>
+    </div>
   </div>
 </div>
