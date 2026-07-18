@@ -204,4 +204,48 @@ export class ShoppingListDataService {
     this.state.shoppingItems.update(items => [...items, item]);
     this.ws.sendPutShoppingItem(item, userName);
   }
+
+  mergeOrAddShoppingItem(params: {
+    categoryIndex: number;
+    amountTypeId: number;
+    name: string;
+    amount: number;
+  }): boolean {
+    const trimmedName = params.name.trim().toLowerCase();
+    const existing = this.state.shoppingItems().find(
+      i => !i.deleted
+        && i.itemName.trim().toLowerCase() === trimmedName
+        && i.itemAmountTypeId === params.amountTypeId
+    );
+
+    if (existing) {
+      existing.amount = (existing.amount ?? 0) + params.amount;
+      existing.savedTime = new Date();
+      this.ws.sendPostShoppingItem(existing, this.tokenService.getUserName());
+      this.state.shoppingItems.update(items => [...items]);
+      return true;
+    }
+
+    const cats = this.state.categories();
+    const cat = cats[params.categoryIndex];
+    if (!cat) {
+      return false;
+    }
+    const key = this.state.getCategoryKeyForItem(cat);
+    const item: ShoppingItem = {
+      shoppingItemId: 0,
+      itemCategoryId: key,
+      itemAmountTypeId: params.amountTypeId,
+      itemName: params.name.trim(),
+      amount: params.amount,
+      bought: false,
+      sendToBought: false,
+      deleted: false,
+      savedTime: new Date(),
+      localId: Date.now()
+    };
+    this.state.shoppingItems.update(items => [...items, item]);
+    this.ws.sendPutShoppingItem(item, this.tokenService.getUserName());
+    return false;
+  }
 }

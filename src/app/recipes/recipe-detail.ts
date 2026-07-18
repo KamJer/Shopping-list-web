@@ -124,12 +124,17 @@ export class RecipeDetail implements OnInit, OnDestroy {
     const matchedUnit = at.find(
       a => a.typeName.toLowerCase() === ing.unit.trim().toLowerCase()
     );
-    this.newItemAmountTypeId =
-      matchedUnit != null
-        ? this.data.getAmountTypeKey(matchedUnit)
-        : at.length > 0
-          ? this.data.getAmountTypeKey(at[0])
-          : null;
+    if (matchedUnit != null) {
+      this.newItemAmountTypeId = this.data.getAmountTypeKey(matchedUnit);
+    } else {
+      if (ing.unit.trim().length > 0 && at.length > 0) {
+        this.notify.show(
+          `Nie znaleziono jednostki "${ing.unit}" — wybrano domyślną.`,
+          'warn'
+        );
+      }
+      this.newItemAmountTypeId = at.length > 0 ? this.data.getAmountTypeKey(at[0]) : null;
+    }
 
     this.newItemDialogOpen = true;
     queueMicrotask(() => document.getElementById('recipe-item-name')?.focus());
@@ -161,14 +166,23 @@ export class RecipeDetail implements OnInit, OnDestroy {
     if (!this.canConfirmNewItem() || this.newItemAmountTypeId == null) {
       return;
     }
-    this.data.confirmNewOrEditedItem({
+    const merged = this.data.mergeOrAddShoppingItem({
       categoryIndex: this.newItemCategoryIndex,
       amountTypeId: this.newItemAmountTypeId,
       name: this.newItemName,
-      amount: Number(this.newItemAmount),
-      existing: this.editingShoppingItem
+      amount: Number(this.newItemAmount)
     });
-    this.notify.show(`Dodano "${this.newItemName.trim()}" do listy zakupów.`, 'success');
+    if (merged) {
+      this.notify.show(
+        `Zwiększono ilość "${this.newItemName.trim()}" na liście zakupów.`,
+        'success'
+      );
+    } else {
+      this.notify.show(
+        `Dodano "${this.newItemName.trim()}" do listy zakupów.`,
+        'success'
+      );
+    }
     this.closeNewItemDialog();
   }
 
