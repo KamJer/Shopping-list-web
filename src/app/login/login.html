@@ -31,18 +31,13 @@
           [(ngModel)]="password"
           #passwordInput="ngModel"
           required
-          minlength="8"
-          maxlength="64"
           class="login-input"
           [class.is-invalid]="passwordInput.invalid && passwordInput.touched"
           placeholder="Wpisz hasło"
           autocomplete="current-password"
         />
         <p *ngIf="passwordInput.invalid && passwordInput.touched" class="field-error">
-          <ng-container *ngIf="passwordInput.hasError('required'); else lengthError">
-            {{ messages.authValidation.passwordRequired }}
-          </ng-container>
-          <ng-template #lengthError>{{ messages.authValidation.passwordLength }}</ng-template>
+          {{ messages.authValidation.passwordRequired }}
         </p>
       </div>
 

@@ -61,6 +61,11 @@ export class Login {
   }
 
   onRegister() {
+    if (this.password.length < 8 || this.password.length > 64) {
+      this.notify.show(Messages.authValidation.passwordLength, 'error');
+      return;
+    }
+
     const data = {
       userName: this.username,
       password: this.password
