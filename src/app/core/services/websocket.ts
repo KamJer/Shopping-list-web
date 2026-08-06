@@ -3,6 +3,7 @@ import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { Subject } from 'rxjs';
 import { TokenService } from './token.service';
 import { NotificationService } from './notification';
+import { Messages } from '../messages';
 
 export enum Command {
   CONNECT = 'CONNECT',
@@ -52,7 +53,7 @@ export class WebSocketService {
     }
 
     if (!this.token) {
-      this.notify.show('Błąd połączenia — spróbuj odświeżyć stronę', 'error');
+      this.notify.show(Messages.connection.connectError, 'error');
       return;
     }
 
@@ -69,7 +70,7 @@ export class WebSocketService {
         // WebSocket callbacks may run outside Angular zone; UI that depends on messages won't update otherwise.
         this.ngZone.run(() => this.messages$.next(msg));
       },
-      error: () => this.notify.show('Błąd połączenia czasu rzeczywistego', 'error')
+      error: () => this.notify.show(Messages.connection.realtimeError, 'error')
     });
 
     const message: WsMessage = {

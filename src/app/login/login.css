@@ -57,6 +57,17 @@
   box-shadow: 0 0 0 2px rgba(138, 164, 212, 0.25);
 }
 
+.login-input.is-invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+}
+
+.field-error {
+  margin: 5px 0 0;
+  font-size: 0.8rem;
+  color: #dc2626;
+}
+
 .login-actions {
   display: flex;
   gap: 10px;

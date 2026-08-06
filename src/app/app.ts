@@ -6,6 +6,7 @@ import { TokenService } from './core/services/token.service';
 import { ShoppingListDataService } from './shopping-list/services/shopping-list-data.service';
 import { NotificationService } from './core/services/notification';
 import { NotificationBanner } from './core/components/notification-banner';
+import { Messages } from './core/messages';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -36,9 +37,9 @@ export class App {
         await this.router.navigateByUrl('/');
         return;
       }
-      this.notify.show('Wylogowanie nie powiodło się', 'warn');
+      this.notify.show(Messages.auth.logoutFailed, 'warn');
     } catch (err) {
-      this.notify.show('Błąd wylogowania', 'error');
+      this.notify.show(Messages.auth.logoutError, 'error');
     }
   }
 }

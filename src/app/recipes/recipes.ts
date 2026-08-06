@@ -11,6 +11,7 @@ import { RecipeFormService } from './services/recipe-form.service';
 import { TagsService } from './services/tags.service';
 import { NotificationService } from '../core/services/notification';
 import { TokenService } from '../core/services/token.service';
+import { Messages } from '../core/messages';
 
 @Component({
   selector: 'app-recipes',
@@ -264,7 +265,7 @@ export class Recipes implements OnInit {
   submitRecipeForm(): void {
     const title = this.newTitle.trim();
     if (!title) {
-      this.notify.show('Podaj tytuł przepisu.', 'warn');
+      this.notify.show(Messages.recipes.titleRequired, 'warn');
       return;
     }
     if (this.isFormSaving) {
@@ -292,7 +293,7 @@ export class Recipes implements OnInit {
         const httpErr = err as { status?: number; error?: string };
         this.recipeFormError = httpErr.status === 409 && httpErr.error
           ? httpErr.error
-          : 'Nie udało się zapisać przepisu';
+          : Messages.recipes.saveFailed;
         this.isFormSaving = false;
         this.cdr.markForCheck();
       }
@@ -341,12 +342,12 @@ export class Recipes implements OnInit {
     if (id == null) {
       return;
     }
-    if (!window.confirm('Czy na pewno usunąć ten przepis?')) {
+    if (!window.confirm(Messages.recipes.confirmDelete)) {
       return;
     }
     this.recipesService.deleteRecipe(id).subscribe({
       next: () => this.load(),
-      error: () => this.notify.show('Nie udało się usunąć przepisu', 'error')
+      error: () => this.notify.show(Messages.recipes.deleteFailed, 'error')
     });
   }
 
@@ -356,7 +357,7 @@ export class Recipes implements OnInit {
     this.recipes = [];
 
     const handleError = (): void => {
-      this.notify.show('Nie udało się załadować przepisów', 'error');
+      this.notify.show(Messages.recipes.loadFailed, 'error');
       this.isLoading = false;
       if (isInitial && this.initialLoadRetries < 2) {
         this.initialLoadRetries += 1;

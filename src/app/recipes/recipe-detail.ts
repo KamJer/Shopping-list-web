@@ -8,6 +8,7 @@ import { RecipeViewAdapter, RecipeIngredientRow } from './adapters/recipe-view.a
 import { RecipeDto } from './models/recipe-dto.model';
 import { RecipesService } from './recipes.service';
 import { NotificationService } from '../core/services/notification';
+import { Messages, formatMessage } from '../core/messages';
 import { ShoppingListDataService } from '../shopping-list/services/shopping-list-data.service';
 import { ShoppingItem } from '../shopping-list/models/shopping-item.model';
 
@@ -27,6 +28,7 @@ export class RecipeDetail implements OnInit, OnDestroy {
   private readonly notify = inject(NotificationService);
   private readonly view = inject(RecipeViewAdapter);
   protected readonly data = inject(ShoppingListDataService);
+  protected readonly messages = Messages;
 
   recipe: RecipeDto | null = null;
   isLoading = true;
@@ -46,7 +48,7 @@ export class RecipeDetail implements OnInit, OnDestroy {
       this.route.paramMap.subscribe(params => {
         const id = params.get('id');
         if (!id) {
-          this.errorMessage = 'Brak identyfikatora przepisu.';
+          this.errorMessage = Messages.recipes.noId;
           this.isLoading = false;
           return;
         }
@@ -79,8 +81,8 @@ export class RecipeDetail implements OnInit, OnDestroy {
         this.isLoading = false;
       },
       error: () => {
-        this.notify.show('Nie udało się pobrać przepisu.', 'error');
-        this.errorMessage = 'Nie udało się pobrać przepisu.';
+        this.notify.show(Messages.recipes.fetchFailed, 'error');
+        this.errorMessage = Messages.recipes.fetchFailed;
         this.isLoading = false;
       }
     });
@@ -129,7 +131,7 @@ export class RecipeDetail implements OnInit, OnDestroy {
     } else {
       if (ing.unit.trim().length > 0 && at.length > 0) {
         this.notify.show(
-          `Nie znaleziono jednostki "${ing.unit}" — wybrano domyślną.`,
+          formatMessage(Messages.recipes.unitNotFound, { unit: ing.unit }),
           'warn'
         );
       }
@@ -174,12 +176,12 @@ export class RecipeDetail implements OnInit, OnDestroy {
     });
     if (merged) {
       this.notify.show(
-        `Zwiększono ilość "${this.newItemName.trim()}" na liście zakupów.`,
+        formatMessage(Messages.recipes.increasedShoppingItem, { name: this.newItemName.trim() }),
         'success'
       );
     } else {
       this.notify.show(
-        `Dodano "${this.newItemName.trim()}" do listy zakupów.`,
+        formatMessage(Messages.recipes.addedToShoppingList, { name: this.newItemName.trim() }),
         'success'
       );
     }

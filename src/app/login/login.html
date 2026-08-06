@@ -10,11 +10,16 @@
           id="username"
           name="username"
           [(ngModel)]="username"
+          #usernameInput="ngModel"
           required
           class="login-input"
+          [class.is-invalid]="usernameInput.invalid && usernameInput.touched"
           placeholder="Wpisz login"
           autocomplete="username"
         />
+        <p *ngIf="usernameInput.invalid && usernameInput.touched" class="field-error">
+          {{ messages.authValidation.loginRequired }}
+        </p>
       </div>
 
       <div class="form-group">
@@ -24,11 +29,21 @@
           id="password"
           name="password"
           [(ngModel)]="password"
+          #passwordInput="ngModel"
           required
+          minlength="8"
+          maxlength="64"
           class="login-input"
+          [class.is-invalid]="passwordInput.invalid && passwordInput.touched"
           placeholder="Wpisz hasło"
           autocomplete="current-password"
         />
+        <p *ngIf="passwordInput.invalid && passwordInput.touched" class="field-error">
+          <ng-container *ngIf="passwordInput.hasError('required'); else lengthError">
+            {{ messages.authValidation.passwordRequired }}
+          </ng-container>
+          <ng-template #lengthError>{{ messages.authValidation.passwordLength }}</ng-template>
+        </p>
       </div>
 
       <div class="login-actions">

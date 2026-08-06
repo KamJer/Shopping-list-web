@@ -1,15 +1,17 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { normalizeTokenResponse, TokenDto } from '../core/models/token-dto.model';
 import { TokenService } from '../core/services/token.service';
 import { NotificationService } from '../core/services/notification';
+import { Messages } from '../core/messages';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
@@ -18,6 +20,8 @@ export class Login {
   username: string = '';
   password: string = '';
   token: string = '';
+
+  protected readonly messages = Messages;
 
   constructor(
     private http: HttpClient,
@@ -47,11 +51,11 @@ export class Login {
     this.http.post<TokenDto>('/user/log', user).subscribe({
       next: (response) => {
         if (!this.tryFinishLogin(this.username, response)) {
-          this.notify.show('Niepoprawny login lub hasło', 'error');
+          this.notify.show(Messages.auth.loginInvalid, 'error');
         }
       },
       error: () => {
-        this.notify.show('Błąd logowania', 'error');
+        this.notify.show(Messages.auth.loginError, 'error');
       }
     });
   }
@@ -66,11 +70,11 @@ export class Login {
     this.http.post<TokenDto>('/user/register', data).subscribe({
       next: (response) => {
         if (!this.tryFinishLogin(this.username, response)) {
-          this.notify.show('Rejestracja nie zwróciła tokenów — sprawdź odpowiedź serwisu.', 'error');
+          this.notify.show(Messages.auth.registerNoTokens, 'error');
         }
       },
       error: () => {
-        this.notify.show('Błąd rejestracji — sprawdź dane lub czy login jest wolny.', 'error');
+        this.notify.show(Messages.auth.registerFailed, 'error');
       }
     });
   }
