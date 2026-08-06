@@ -14,6 +14,7 @@ export class ShoppingListDataService {
   private readonly state = inject(ShoppingListStateService);
   private readonly ws = inject(ShoppingListWsService);
   private readonly tokenService = inject(TokenService);
+  private nextClientId = 0;
 
   readonly categories = this.state.categories;
   readonly shoppingItems = this.state.shoppingItems;
@@ -46,19 +47,16 @@ export class ShoppingListDataService {
   }
 
   setShoppingItemBought(item: ShoppingItem, bought: boolean): void {
-    item.bought = bought;
-    if (!bought) {
-      item.sendToBought = false;
-    }
+    const updated = { ...item, bought, sendToBought: bought ? item.sendToBought : false };
     const userName = this.tokenService.getUserName();
 
     if (item.shoppingItemId === 0) {
-      this.ws.sendPutShoppingItem(item, userName);
+      this.ws.sendPutShoppingItem(updated, userName);
     } else {
-      this.ws.sendPostShoppingItem(item, userName);
+      this.ws.sendPostShoppingItem(updated, userName);
     }
 
-    this.state.shoppingItems.update(items => [...items]);
+    this.state.shoppingItems.update(items => items.map(i => i === item ? updated : i));
   }
 
   /**
@@ -111,19 +109,17 @@ export class ShoppingListDataService {
     }
     const userName = this.tokenService.getUserName();
     if (editing) {
-      editing.categoryName = trimmed;
-      editing.savedTime = new Date();
-      this.ws.sendPostCategory(editing, userName);
-      this.state.categories.update(cats => [...cats]);
+      const updated = { ...editing, categoryName: trimmed, savedTime: new Date() };
+      this.ws.sendPostCategory(updated, userName);
+      this.state.categories.update(cats => cats.map(c => c === editing ? updated : c));
       return;
     }
-    const localId = Date.now();
     const newCategory: Category = {
       categoryId: 0,
       categoryName: trimmed,
       deleted: false,
       savedTime: new Date(),
-      localId
+      localId: --this.nextClientId
     };
     this.state.categories.update(c => [...c, newCategory]);
     this.ws.sendPutCategory(newCategory, userName);
@@ -136,19 +132,17 @@ export class ShoppingListDataService {
     }
     const userName = this.tokenService.getUserName();
     if (editing) {
-      editing.typeName = trimmed;
-      editing.savedTime = new Date();
-      this.ws.sendPostAmountType(editing, userName);
-      this.state.amountTypes.update(list => [...list]);
+      const updated = { ...editing, typeName: trimmed, savedTime: new Date() };
+      this.ws.sendPostAmountType(updated, userName);
+      this.state.amountTypes.update(list => list.map(u => u === editing ? updated : u));
       return;
     }
-    const localId = Date.now();
     const unit: AmountType = {
       amountTypeId: 0,
       typeName: trimmed,
       deleted: false,
       savedTime: new Date(),
-      localId
+      localId: --this.nextClientId
     };
     this.state.amountTypes.update(list => [...list, unit]);
     this.ws.sendPutAmountType(unit, userName);
@@ -179,13 +173,16 @@ export class ShoppingListDataService {
     const existing = params.existing;
 
     if (existing) {
-      existing.itemName = params.name.trim();
-      existing.amount = params.amount;
-      existing.itemCategoryId = key;
-      existing.itemAmountTypeId = params.amountTypeId;
-      existing.savedTime = new Date();
-      this.ws.sendPostShoppingItem(existing, userName);
-      this.state.shoppingItems.update(items => [...items]);
+      const updated = {
+        ...existing,
+        itemName: params.name.trim(),
+        amount: params.amount,
+        itemCategoryId: key,
+        itemAmountTypeId: params.amountTypeId,
+        savedTime: new Date()
+      };
+      this.ws.sendPostShoppingItem(updated, userName);
+      this.state.shoppingItems.update(items => items.map(i => i === existing ? updated : i));
       return;
     }
 
@@ -199,7 +196,7 @@ export class ShoppingListDataService {
       sendToBought: false,
       deleted: false,
       savedTime: new Date(),
-      localId: Date.now()
+      localId: --this.nextClientId
     };
     this.state.shoppingItems.update(items => [...items, item]);
     this.ws.sendPutShoppingItem(item, userName);
@@ -219,10 +216,9 @@ export class ShoppingListDataService {
     );
 
     if (existing) {
-      existing.amount = (existing.amount ?? 0) + params.amount;
-      existing.savedTime = new Date();
-      this.ws.sendPostShoppingItem(existing, this.tokenService.getUserName());
-      this.state.shoppingItems.update(items => [...items]);
+      const updated = { ...existing, amount: (existing.amount ?? 0) + params.amount, savedTime: new Date() };
+      this.ws.sendPostShoppingItem(updated, this.tokenService.getUserName());
+      this.state.shoppingItems.update(items => items.map(i => i === existing ? updated : i));
       return true;
     }
 
@@ -242,7 +238,7 @@ export class ShoppingListDataService {
       sendToBought: false,
       deleted: false,
       savedTime: new Date(),
-      localId: Date.now()
+      localId: --this.nextClientId
     };
     this.state.shoppingItems.update(items => [...items, item]);
     this.ws.sendPutShoppingItem(item, this.tokenService.getUserName());

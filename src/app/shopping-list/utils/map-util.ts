@@ -45,7 +45,7 @@ export class MapUtil {
       sendToBought: Boolean(d.sendToBought),
       deleted: Boolean(d.deleted),
       savedTime: d.savedTime as Date | null | undefined,
-      localId: localId !== undefined && Number.isFinite(localId) && localId > 0 ? localId : undefined
+      localId: localId !== undefined && Number.isFinite(localId) && localId !== 0 ? localId : undefined
     };
   }
 

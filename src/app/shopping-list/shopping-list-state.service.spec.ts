@@ -20,7 +20,7 @@ describe('ShoppingListStateService', () => {
       bought: true,
       sendToBought: true,
       deleted: false,
-      localId: 123,
+      localId: -1,
       modifyState: ModifyState.INSERT
     };
 
@@ -35,7 +35,7 @@ describe('ShoppingListStateService', () => {
       bought: false,
       sendToBought: false,
       deleted: false,
-      localId: 123,
+      localId: -1,
       modifyState: ModifyState.UPDATE
     };
 
@@ -62,7 +62,7 @@ describe('ShoppingListStateService', () => {
           bought: false,
           sendToBought: false,
           deleted: false,
-          localId: 777,
+          localId: -1,
           modifyState: ModifyState.INSERT
         }
       ],
@@ -83,7 +83,7 @@ describe('ShoppingListStateService', () => {
           bought: false,
           sendToBought: false,
           deleted: false,
-          localId: 777,
+          localId: -1,
           modifyState: ModifyState.UPDATE
         }
       ],
@@ -97,6 +97,6 @@ describe('ShoppingListStateService', () => {
     const items = service.shoppingItems();
     expect(items.length).toBe(1);
     expect(items[0].amount).toBe(2);
-    expect(items[0].localId).toBe(777);
+    expect(items[0].localId).toBe(-1);
   });
 });

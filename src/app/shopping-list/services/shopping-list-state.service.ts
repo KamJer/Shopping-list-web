@@ -64,7 +64,7 @@ export class ShoppingListStateService {
         purgeKey = this.getAmountTypeKey(list[idx]);
       } else if (dto.amountTypeId > 0) {
         purgeKey = dto.amountTypeId;
-      } else if (dto.localId > 0) {
+      } else if (dto.localId !== 0) {
         purgeKey = dto.localId;
       }
       this.amountTypes.update(current => {
@@ -110,7 +110,7 @@ export class ShoppingListStateService {
         removedKey = this.getCategoryKeyForItem(list[idx]);
       } else if (dto.categoryId > 0) {
         removedKey = dto.categoryId;
-      } else if (dto.localId > 0) {
+      } else if (dto.localId !== 0) {
         removedKey = dto.localId;
       }
       this.categories.update(current => {
@@ -390,7 +390,7 @@ export class ShoppingListStateService {
   }
 
   private findShoppingItemIndex(list: ShoppingItem[], dto: ShoppingItemDto): number {
-    if (dto.localId != null && dto.localId > 0) {
+    if (dto.localId != null && dto.localId !== 0) {
       const byLocal = list.findIndex(x => (x.localId ?? 0) === dto.localId);
       if (byLocal >= 0) {
         return byLocal;
