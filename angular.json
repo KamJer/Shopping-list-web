@@ -9,9 +9,9 @@
   "projects": {
     "ShoppingListWeb": {
       "projectType": "application",
-      "schematics": {},
+      "schematics": {}, 
       "root": "",
-      "sourceRoot": "src",
+      "sourceRoot": "src", 
       "prefix": "app",
       "architect": {
         "build": {
