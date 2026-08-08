@@ -28,6 +28,10 @@ export class App {
     return path !== '/';
   }
 
+  protected isAdmin(): boolean {
+    return this.tokenService.isAdmin();
+  }
+
   protected async logout(): Promise<void> {
     try {
       const ok = await firstValueFrom(this.http.get<boolean>('/user/logout'));

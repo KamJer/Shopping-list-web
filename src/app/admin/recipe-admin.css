@@ -1,0 +1,160 @@
+.admin-page {
+  background: #eef1f6;
+  min-height: 100vh;
+  padding: 24px 14px;
+  font-family: Arial, sans-serif;
+  color: #2b2f36;
+  display: flex;
+  justify-content: center;
+}
+
+.admin-card {
+  width: 100%;
+  max-width: 720px;
+  background: #ffffff;
+  border: 1px solid #d6dbe4;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(26, 38, 58, 0.08);
+  padding: 20px 18px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.back-btn {
+  text-decoration: none;
+  font-size: 20px;
+  color: #3d5a9a;
+}
+
+.admin-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.admin-empty {
+  margin: 12px 0;
+  color: #798091;
+  font-size: 15px;
+}
+
+.admin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 8px;
+  border-bottom: 1px solid #e5e9f1;
+}
+
+.admin-row:last-child {
+  border-bottom: none;
+}
+
+.recipe-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.recipe-name {
+  font-weight: 600;
+  color: #3f4656;
+  overflow-wrap: anywhere;
+}
+
+.recipe-meta {
+  font-size: 13px;
+  color: #798091;
+}
+
+.recipe-state {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef1f6;
+  color: #4f5869;
+  border: 1px solid #cfd5e1;
+}
+
+.recipe-state--published {
+  background: #e7f4ea;
+  color: #2e7d43;
+  border-color: #bcdcc6;
+}
+
+.recipe-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #cfd5e1;
+  background: #f3f4f7;
+  color: #3b4250;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: #e9edf4;
+}
+
+.action-btn--danger {
+  color: #b03a3a;
+  border-color: #e0c0c0;
+}
+
+.action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.pager-btn {
+  width: 36px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #cfd5e1;
+  background: #f3f4f7;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.pager-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pager-info {
+  font-size: 14px;
+  color: #4f5869;
+}

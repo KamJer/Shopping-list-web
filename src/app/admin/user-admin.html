@@ -1,0 +1,104 @@
+<div class="admin-page">
+  <div class="admin-card">
+    <div class="admin-header">
+      <a routerLink="/admin" class="back-btn" aria-label="Wróć do panelu">←</a>
+      <h1 class="admin-title">Użytkownicy</h1>
+    </div>
+    @if (isLoading()) {
+      <p class="admin-empty">Ładowanie…</p>
+    }
+    @if (!isLoading() && users().length === 0) {
+      <p class="admin-empty">Brak użytkowników.</p>
+    }
+    @if (!isLoading() && users().length > 0) {
+      <ul class="admin-list" role="list">
+        @for (user of users(); track user.userName) {
+          <li class="admin-row">
+            <div class="user-info">
+              <span class="user-name">{{ user.userName }}</span>
+              <span
+                class="user-role"
+                [class.user-role--admin]="user.role === 'ADMIN'"
+                [class.user-role--super-admin]="user.role === 'SUPER_ADMIN'"
+              >
+                {{ user.role === 'SUPER_ADMIN' ? 'Super admin' : user.role }}
+              </span>
+              @if (isCurrentUser(user)) {
+                <span class="user-flag">Ty</span>
+              }
+            </div>
+            <div class="user-actions">
+              <button
+                type="button"
+                class="action-btn"
+                [disabled]="user.role === 'SUPER_ADMIN' || (isCurrentUser(user) && user.role === 'ADMIN')"
+                (click)="changeRole(user)"
+              >
+                {{ user.role === 'SUPER_ADMIN' ? '—' : (user.role === 'ADMIN' ? 'Zdegraduj' : 'Promuj') }}
+              </button>
+              <button
+                type="button"
+                class="action-btn"
+                [disabled]="user.role === 'SUPER_ADMIN'"
+                (click)="openPasswordDialog(user)"
+              >
+                Zmień hasło
+              </button>
+              <button
+                type="button"
+                class="action-btn action-btn--danger"
+                [disabled]="user.role === 'SUPER_ADMIN' || isCurrentUser(user)"
+                (click)="deleteUser(user)"
+              >
+                Usuń
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>
+
+@if (passwordDialogOpen()) {
+  <div
+    class="dialog-backdrop"
+    (click)="closePasswordDialog()"
+    role="presentation"
+  >
+    <div class="dialog-panel" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="password-dialog-title">
+      <h3 id="password-dialog-title" class="dialog-title">Zmień hasło</h3>
+      <p class="dialog-user">{{ editingUser()?.userName }}</p>
+      <label class="dialog-label" for="new-password-input">Nowe hasło</label>
+      <input
+        id="new-password-input"
+        class="dialog-input"
+        type="password"
+        [(ngModel)]="newPassword"
+        (keydown.enter)="savePassword()"
+        autocomplete="new-password"
+      />
+      <label class="dialog-label" for="confirm-password-input">Potwierdź hasło</label>
+      <input
+        id="confirm-password-input"
+        class="dialog-input"
+        type="password"
+        [(ngModel)]="confirmPassword"
+        (keydown.enter)="savePassword()"
+        autocomplete="new-password"
+      />
+      @if (passwordError()) {
+        <p class="dialog-hint dialog-hint--error">{{ passwordError() }}</p>
+      }
+      <div class="dialog-actions">
+        <button type="button" class="dialog-btn dialog-btn--secondary" (click)="closePasswordDialog()">Anuluj</button>
+        <button
+          type="button"
+          class="dialog-btn dialog-btn--primary"
+          (click)="savePassword()"
+          [disabled]="!newPassword || !confirmPassword"
+        >Zapisz</button>
+      </div>
+    </div>
+  </div>
+}

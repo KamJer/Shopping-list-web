@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { normalizeTokenResponse, TokenDto } from '../core/models/token-dto.model';
+import { fetchUserRole } from '../core/auth/shared-token-refresh';
 import { TokenService } from '../core/services/token.service';
 import { NotificationService } from '../core/services/notification';
 import { Messages } from '../core/messages';
@@ -31,14 +32,15 @@ export class Login {
   ) {}
 
   /** Zapisuje sesję i przechodzi do listy, jeśli w `rawBody` jest token (jak z `/user/log`). */
-  private tryFinishLogin(username: string, rawBody: unknown): boolean {
+  private async tryFinishLogin(username: string, rawBody: unknown): Promise<boolean> {
     const dto = normalizeTokenResponse(rawBody);
     if (!dto?.accessToken) {
       return false;
     }
     this.tokenService.setUserName(username);
     this.tokenService.persistAuthTokens(dto);
-    void this.router.navigate(['/list']);
+    await fetchUserRole(this.http, this.tokenService, dto.accessToken);
+    await this.router.navigate(['/list']);
     return true;
   }
 
@@ -50,9 +52,11 @@ export class Login {
 
     this.http.post<TokenDto>('/user/log', user).subscribe({
       next: (response) => {
-        if (!this.tryFinishLogin(this.username, response)) {
-          this.notify.show(Messages.auth.loginInvalid, 'error');
-        }
+        void this.tryFinishLogin(this.username, response).then(ok => {
+          if (!ok) {
+            this.notify.show(Messages.auth.loginInvalid, 'error');
+          }
+        });
       },
       error: () => {
         this.notify.show(Messages.auth.loginError, 'error');
@@ -74,9 +78,11 @@ export class Login {
     /** `POST /user/register` — to samo DTO co logowanie; odpowiedź z tokenami jak `/user/log`. */
     this.http.post<TokenDto>('/user/register', data).subscribe({
       next: (response) => {
-        if (!this.tryFinishLogin(this.username, response)) {
-          this.notify.show(Messages.auth.registerNoTokens, 'error');
-        }
+        void this.tryFinishLogin(this.username, response).then(ok => {
+          if (!ok) {
+            this.notify.show(Messages.auth.registerNoTokens, 'error');
+          }
+        });
       },
       error: () => {
         this.notify.show(Messages.auth.registerFailed, 'error');

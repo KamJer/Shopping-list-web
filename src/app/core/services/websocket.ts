@@ -1,4 +1,4 @@
-import { Injectable, NgZone, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { Subject } from 'rxjs';
 import { TokenService } from './token.service';
@@ -37,8 +37,7 @@ export class WebSocketService {
   private token: string | null = null;
 
   constructor(
-    private tokenService: TokenService,
-    private ngZone: NgZone
+    private tokenService: TokenService
   ) { }
 
   setToken(token: string) {
@@ -67,8 +66,7 @@ export class WebSocketService {
 
     this.socket$.subscribe({
       next: msg => {
-        // WebSocket callbacks may run outside Angular zone; UI that depends on messages won't update otherwise.
-        this.ngZone.run(() => this.messages$.next(msg));
+        this.messages$.next(msg);
       },
       error: () => this.notify.show(Messages.connection.realtimeError, 'error')
     });

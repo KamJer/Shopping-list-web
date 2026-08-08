@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ChangeDetectorRef, ElementRef, HostListener, inject, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { Component, ElementRef, HostListener, inject, OnInit, QueryList, signal, ViewChildren } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -13,6 +13,29 @@ import { NotificationService } from '../core/services/notification';
 import { TokenService } from '../core/services/token.service';
 import { Messages } from '../core/messages';
 
+type RecipeMode = 'all' | 'name' | 'products' | 'tags' | 'mine';
+
+interface TagRow {
+  id: number;
+  value: string;
+  suggestions: string[];
+  showSuggestions: boolean;
+  highlightIndex: number;
+}
+
+interface IngredientRow {
+  id: number;
+  productName: string;
+  amount: string;
+  unitType: string;
+}
+
+interface StepRow {
+  id: number;
+  stepNumber: string;
+  value: string;
+}
+
 @Component({
   selector: 'app-recipes',
   standalone: true,
@@ -22,41 +45,40 @@ import { Messages } from '../core/messages';
 })
 export class Recipes implements OnInit {
   private readonly recipesService = inject(RecipesService);
-  private readonly cdr = inject(ChangeDetectorRef);
   private readonly view = inject(RecipeViewAdapter);
   private readonly form = inject(RecipeFormService);
   private readonly tagsService = inject(TagsService);
   private readonly notify = inject(NotificationService);
   private readonly tokenService = inject(TokenService);
 
-  recipes: RecipeDto[] = [];
-  totalPages = 0;
-  totalElements = 0;
-  page = 0;
-  pageSize = 10;
-  isLoading = false;
-  initialLoadDone = false;
+  readonly recipes = signal<RecipeDto[]>([]);
+  readonly totalPages = signal(0);
+  readonly totalElements = signal(0);
+  readonly page = signal(0);
+  readonly pageSize = 10;
+  readonly isLoading = signal(false);
+  readonly initialLoadDone = signal(false);
   private initialLoadRetries = 0;
 
-  mode: 'all' | 'name' | 'products' | 'tags' | 'mine' = 'all';
-  nameQuery = '';
-  productsText = '';
-  tagsText = '';
+  readonly mode = signal<RecipeMode>('all');
+  readonly nameQuery = signal('');
+  readonly productsText = signal('');
+  readonly tagsText = signal('');
 
-  allTags: string[] = [];
+  readonly allTags = signal<string[]>([]);
   private tagsLoaded = false;
 
-  recipeFormEditSource: RecipeDto | null = null;
-  showRecipeFormModal = false;
-  newTitle = '';
-  newDescription = '';
-  newSource = '';
-  createTagRows: { id: number; value: string; suggestions: string[]; showSuggestions: boolean; highlightIndex: number }[] = [];
-  createIngredientRows: { id: number; productName: string; amount: string; unitType: string }[] = [];
-  createStepRows: { id: number; stepNumber: string; value: string }[] = [];
-  recipeIsPublic = false;
-  isFormSaving = false;
-  recipeFormError: string | null = null;
+  readonly recipeFormEditSource = signal<RecipeDto | null>(null);
+  readonly showRecipeFormModal = signal(false);
+  readonly newTitle = signal('');
+  readonly newDescription = signal('');
+  readonly newSource = signal('');
+  readonly createTagRows = signal<TagRow[]>([]);
+  readonly createIngredientRows = signal<IngredientRow[]>([]);
+  readonly createStepRows = signal<StepRow[]>([]);
+  readonly recipeIsPublic = signal(false);
+  readonly isFormSaving = signal(false);
+  readonly recipeFormError = signal<string | null>(null);
   private nextCreateRowId = 1;
 
   @ViewChildren('tagInput') tagInputs!: QueryList<ElementRef<HTMLInputElement>>;
@@ -78,31 +100,30 @@ export class Recipes implements OnInit {
   }
 
   showUserRecipes(): void {
-    this.mode = 'mine';
-    this.page = 0;
+    this.mode.set('mine');
+    this.page.set(0);
     this.load();
   }
 
   openCreateRecipe(): void {
-    this.recipeFormEditSource = null;
+    this.recipeFormEditSource.set(null);
     this.resetCreateForm();
     this.loadTags();
-    this.showRecipeFormModal = true;
-    this.cdr.markForCheck();
+    this.showRecipeFormModal.set(true);
   }
 
   closeRecipeForm(): void {
-    if (this.isFormSaving) {
+    if (this.isFormSaving()) {
       return;
     }
-    this.showRecipeFormModal = false;
-    this.recipeFormEditSource = null;
+    this.showRecipeFormModal.set(false);
+    this.recipeFormEditSource.set(null);
     this.resetCreateForm();
   }
 
   @HostListener('document:keydown', ['$event'])
   onFormKeydown(ev: KeyboardEvent): void {
-    if (!this.showRecipeFormModal) {
+    if (!this.showRecipeFormModal()) {
       return;
     }
     if (ev.key === 'Escape') {
@@ -112,19 +133,22 @@ export class Recipes implements OnInit {
   }
 
   private resetCreateForm(): void {
-    this.newTitle = '';
-    this.newDescription = '';
-    this.newSource = '';
-    this.createTagRows = [];
-    this.createIngredientRows = [];
-    this.createStepRows = [];
-    this.recipeIsPublic = false;
-    this.recipeFormError = null;
+    this.newTitle.set('');
+    this.newDescription.set('');
+    this.newSource.set('');
+    this.createTagRows.set([]);
+    this.createIngredientRows.set([]);
+    this.createStepRows.set([]);
+    this.recipeIsPublic.set(false);
+    this.recipeFormError.set(null);
     this.nextCreateRowId = 1;
   }
 
   addTagField(): void {
-    this.createTagRows.push({ id: this.nextCreateRowId++, value: '', suggestions: [], showSuggestions: false, highlightIndex: -1 });
+    this.createTagRows.update(rows => [
+      ...rows,
+      { id: this.nextCreateRowId++, value: '', suggestions: [], showSuggestions: false, highlightIndex: -1 }
+    ]);
     setTimeout(() => {
       const inputs = this.tagInputs?.toArray();
       if (inputs && inputs.length > 0) {
@@ -134,7 +158,7 @@ export class Recipes implements OnInit {
   }
 
   removeTagField(index: number): void {
-    this.createTagRows.splice(index, 1);
+    this.createTagRows.update(rows => rows.filter((_, i) => i !== index));
   }
 
   private loadTags(): void {
@@ -143,9 +167,9 @@ export class Recipes implements OnInit {
     }
     this.tagsService.getAll().subscribe({
       next: tags => {
-        this.allTags = tags;
+        this.allTags.set(tags);
         this.tagsLoaded = true;
-        for (const row of this.createTagRows) {
+        for (const row of this.createTagRows()) {
           if (!row.value?.trim()) {
             this.onTagInput(row, '', true);
           }
@@ -153,15 +177,15 @@ export class Recipes implements OnInit {
       },
       error: err => {
         console.warn('Nie udało się pobrać listy tagów (autocomplete wyłączony):', err);
-        this.allTags = [];
+        this.allTags.set([]);
       }
     });
   }
 
-  onTagInput(row: { value: string; suggestions: string[]; showSuggestions: boolean; highlightIndex: number }, value: string, force = false): void {
+  onTagInput(row: TagRow, value: string, force = false): void {
     const query = (value || '').toLowerCase().trim();
     const selectedElsewhere = new Set(
-      this.createTagRows
+      this.createTagRows()
         .filter(r => r !== row)
         .map(r => r.value.trim().toLowerCase())
         .filter(Boolean)
@@ -172,7 +196,7 @@ export class Recipes implements OnInit {
       row.highlightIndex = -1;
       return;
     }
-    row.suggestions = this.allTags.filter(t => {
+    row.suggestions = this.allTags().filter(t => {
       const name = t.toLowerCase();
       if (query && !name.includes(query)) {
         return false;
@@ -186,17 +210,17 @@ export class Recipes implements OnInit {
     row.highlightIndex = row.suggestions.length > 0 ? 0 : -1;
   }
 
-  onTagFocus(row: { value: string; suggestions: string[]; showSuggestions: boolean; highlightIndex: number }): void {
+  onTagFocus(row: TagRow): void {
     this.onTagInput(row, row.value, true);
   }
 
-  onTagBlur(row: { showSuggestions: boolean }): void {
+  onTagBlur(row: TagRow): void {
     setTimeout(() => { row.showSuggestions = false; }, 150);
   }
 
   onTagKeydown(
     ev: KeyboardEvent,
-    row: { value: string; suggestions: string[]; showSuggestions: boolean; highlightIndex: number }
+    row: TagRow
   ): void {
     if (!row.showSuggestions || row.suggestions.length === 0) {
       if (ev.key === 'ArrowDown' || ev.key === 'Enter') {
@@ -223,13 +247,13 @@ export class Recipes implements OnInit {
   }
 
   setTagHighlight(
-    row: { highlightIndex: number; suggestions: string[] },
+    row: TagRow,
     index: number
   ): void {
     row.highlightIndex = index;
   }
 
-  selectSuggestion(    row: { value: string; suggestions: string[]; showSuggestions: boolean; highlightIndex: number }, tag: string): void {
+  selectSuggestion(row: TagRow, tag: string): void {
     row.value = tag;
     row.suggestions = [];
     row.showSuggestions = false;
@@ -237,65 +261,67 @@ export class Recipes implements OnInit {
   }
 
   addIngredientField(): void {
-    this.createIngredientRows.push({
-      id: this.nextCreateRowId++,
-      productName: '',
-      amount: '',
-      unitType: ''
-    });
+    this.createIngredientRows.update(rows => [
+      ...rows,
+      {
+        id: this.nextCreateRowId++,
+        productName: '',
+        amount: '',
+        unitType: ''
+      }
+    ]);
   }
 
   removeIngredientField(index: number): void {
-    this.createIngredientRows.splice(index, 1);
+    this.createIngredientRows.update(rows => rows.filter((_, i) => i !== index));
   }
 
   addStepField(): void {
-    const n = this.createStepRows.length + 1;
-    this.createStepRows.push({ id: this.nextCreateRowId++, stepNumber: String(n), value: '' });
+    this.createStepRows.update(rows => {
+      const n = rows.length + 1;
+      return [...rows, { id: this.nextCreateRowId++, stepNumber: String(n), value: '' }];
+    });
   }
 
   removeStepField(index: number): void {
-    this.createStepRows.splice(index, 1);
-  }
-
-  trackCreateRowId(_index: number, row: { id: number }): number {
-    return row.id;
+    this.createStepRows.update(rows => rows.filter((_, i) => i !== index));
   }
 
   submitRecipeForm(): void {
-    const title = this.newTitle.trim();
+    const title = this.newTitle().trim();
     if (!title) {
       this.notify.show(Messages.recipes.titleRequired, 'warn');
       return;
     }
-    if (this.isFormSaving) {
+    if (this.isFormSaving()) {
       return;
     }
-    this.isFormSaving = true;
+    this.isFormSaving.set(true);
     const payload = this.form.buildPayload({
-      title: this.newTitle,
-      description: this.newDescription,
-      source: this.newSource,
-      isPublic: this.recipeIsPublic,
-      editSource: this.recipeFormEditSource,
-      tagRows: this.createTagRows,
-      ingredientRows: this.createIngredientRows,
-      stepRows: this.createStepRows
+      title: this.newTitle(),
+      description: this.newDescription(),
+      source: this.newSource(),
+      isPublic: this.recipeIsPublic(),
+      editSource: this.recipeFormEditSource(),
+      tagRows: this.createTagRows(),
+      ingredientRows: this.createIngredientRows(),
+      stepRows: this.createStepRows()
     });
 
     this.recipesService.saveRecipe(payload).subscribe({
       next: () => {
-        this.isFormSaving = false;
+        this.isFormSaving.set(false);
         this.closeRecipeForm();
         this.load();
       },
       error: (err: unknown) => {
         const httpErr = err as { status?: number; error?: string };
-        this.recipeFormError = httpErr.status === 409 && httpErr.error
-          ? httpErr.error
-          : Messages.recipes.saveFailed;
-        this.isFormSaving = false;
-        this.cdr.markForCheck();
+        this.recipeFormError.set(
+          httpErr.status === 409 && httpErr.error
+            ? httpErr.error
+            : Messages.recipes.saveFailed
+        );
+        this.isFormSaving.set(false);
       }
     });
   }
@@ -304,23 +330,22 @@ export class Recipes implements OnInit {
     ev.preventDefault();
     ev.stopPropagation();
     this.resetCreateForm();
-    this.recipeFormEditSource = recipe;
+    this.recipeFormEditSource.set(recipe);
     const populated = this.form.populateFromRecipe(recipe, this.nextCreateRowId);
-    this.newTitle = populated.title;
-    this.newDescription = populated.description;
-    this.newSource = populated.source;
-    this.recipeIsPublic = populated.recipeIsPublic;
-    this.createTagRows = populated.createTagRows.map(row => ({
+    this.newTitle.set(populated.title);
+    this.newDescription.set(populated.description);
+    this.newSource.set(populated.source);
+    this.recipeIsPublic.set(populated.recipeIsPublic);
+    this.createTagRows.set(populated.createTagRows.map(row => ({
       ...row,
       suggestions: [],
       showSuggestions: false,
       highlightIndex: -1
-    }));
-    this.createIngredientRows = populated.createIngredientRows;
-    this.createStepRows = populated.createStepRows;
+    })));
+    this.createIngredientRows.set(populated.createIngredientRows);
+    this.createStepRows.set(populated.createStepRows);
     this.nextCreateRowId = populated.nextRowId;
-    this.showRecipeFormModal = true;
-    this.cdr.markForCheck();
+    this.showRecipeFormModal.set(true);
   }
 
   isOwnRecipe(recipe: RecipeDto): boolean {
@@ -352,44 +377,44 @@ export class Recipes implements OnInit {
   }
 
   load(isInitial = false): void {
-    const pageable = { page: this.page, size: this.pageSize };
-    this.isLoading = true;
-    this.recipes = [];
+    const pageable = { page: this.page(), size: this.pageSize };
+    this.isLoading.set(true);
+    this.recipes.set([]);
 
     const handleError = (): void => {
       this.notify.show(Messages.recipes.loadFailed, 'error');
-      this.isLoading = false;
+      this.isLoading.set(false);
       if (isInitial && this.initialLoadRetries < 2) {
         this.initialLoadRetries += 1;
         setTimeout(() => this.load(true), 300);
         return;
       }
-      this.initialLoadDone = true;
+      this.initialLoadDone.set(true);
     };
 
     const handleNext = (p: PageResult<RecipeDto>): void => {
       this.applyPage(p);
-      this.isLoading = false;
-      this.initialLoadDone = true;
+      this.isLoading.set(false);
+      this.initialLoadDone.set(true);
     };
 
-    if (this.mode === 'mine') {
+    if (this.mode() === 'mine') {
       this.recipesService.getRecipesForUser(pageable).subscribe({ next: handleNext, error: handleError });
       return;
     }
 
-    if (this.mode === 'all') {
+    if (this.mode() === 'all') {
       this.recipesService.getAll(pageable).subscribe({ next: handleNext, error: handleError });
       return;
     }
 
-    if (this.mode === 'name') {
-      this.recipesService.getByName(this.nameQuery, pageable).subscribe({ next: handleNext, error: handleError });
+    if (this.mode() === 'name') {
+      this.recipesService.getByName(this.nameQuery(), pageable).subscribe({ next: handleNext, error: handleError });
       return;
     }
 
-    if (this.mode === 'products') {
-      const products = this.parseCommaSeparated(this.productsText);
+    if (this.mode() === 'products') {
+      const products = this.parseCommaSeparated(this.productsText());
       if (products.length === 0) {
         this.recipesService.getAll(pageable).subscribe({ next: handleNext, error: handleError });
         return;
@@ -398,7 +423,7 @@ export class Recipes implements OnInit {
       return;
     }
 
-    const tagNames = this.parseCommaSeparated(this.tagsText);
+    const tagNames = this.parseCommaSeparated(this.tagsText());
     if (tagNames.length === 0) {
       this.recipesService.getAll(pageable).subscribe({ next: handleNext, error: handleError });
       return;
@@ -407,35 +432,34 @@ export class Recipes implements OnInit {
   }
 
   private applyPage(p: PageResult<RecipeDto>): void {
-    this.recipes = Array.isArray(p?.content) ? p.content : [];
-    this.totalPages = Number(p?.totalPages ?? 0);
-    this.totalElements = Number(p?.totalElements ?? this.recipes.length);
+    this.recipes.set(Array.isArray(p?.content) ? p.content : []);
+    this.totalPages.set(Number(p?.totalPages ?? 0));
+    this.totalElements.set(Number(p?.totalElements ?? this.recipes().length));
     this.initialLoadRetries = 0;
-    this.cdr.markForCheck();
   }
 
   prevPage(): void {
-    if (this.page <= 0) {
+    if (this.page() <= 0) {
       return;
     }
-    this.page -= 1;
+    this.page.update(p => p - 1);
     this.load();
   }
 
   nextPage(): void {
-    if (this.totalPages <= 0) {
+    if (this.totalPages() <= 0) {
       return;
     }
-    if (this.page >= this.totalPages - 1) {
+    if (this.page() >= this.totalPages() - 1) {
       return;
     }
-    this.page += 1;
+    this.page.update(p => p + 1);
     this.load();
   }
 
-  setMode(next: Exclude<typeof this.mode, 'mine'>): void {
-    this.mode = next;
-    this.page = 0;
+  setMode(next: Exclude<RecipeMode, 'mine'>): void {
+    this.mode.set(next);
+    this.page.set(0);
     this.load();
   }
 

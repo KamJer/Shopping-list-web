@@ -1,0 +1,59 @@
+<div class="admin-page">
+  <div class="admin-card">
+    <div class="admin-header">
+      <a routerLink="/admin" class="back-btn" aria-label="Wróć do panelu">←</a>
+      <h1 class="admin-title">Przepisy</h1>
+    </div>
+    @if (isLoading()) {
+      <p class="admin-empty">Ładowanie…</p>
+    }
+    @if (!isLoading() && recipes().length === 0) {
+      <p class="admin-empty">Brak przepisów.</p>
+    }
+    @if (!isLoading() && recipes().length > 0) {
+      <ul class="admin-list" role="list">
+        @for (recipe of recipes(); track getRecipeId(recipe)) {
+          <li class="admin-row">
+            <div class="recipe-info">
+              <span class="recipe-name">{{ getRecipeName(recipe) }}</span>
+              <span class="recipe-meta">Autor: {{ getRecipeOwner(recipe) }}</span>
+              <span class="recipe-state" [class.recipe-state--published]="isPublished(recipe)">
+                {{ isPublished(recipe) ? 'opublikowany' : 'ukryty' }}
+              </span>
+            </div>
+            <div class="recipe-actions">
+              <button
+                type="button"
+                class="action-btn"
+                [disabled]="getRecipeId(recipe) == null"
+                (click)="togglePublished(recipe)"
+              >
+                {{ isPublished(recipe) ? 'Ukryj' : 'Publikuj' }}
+              </button>
+              <button
+                type="button"
+                class="action-btn action-btn--danger"
+                [disabled]="getRecipeId(recipe) == null"
+                (click)="confirmDelete(recipe)"
+              >
+                Usuń
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+    @if (!isLoading() && totalElements() > 0) {
+      <div class="pager">
+        <button type="button" class="pager-btn" [disabled]="page() <= 0" (click)="prevPage()">←</button>
+        <span class="pager-info">Strona {{ page() + 1 }} / {{ Math.max(totalPages(), 1) }}</span>
+        <button
+          type="button"
+          class="pager-btn"
+          [disabled]="totalPages() <= 0 || page() >= totalPages() - 1"
+          (click)="nextPage()"
+        >→</button>
+      </div>
+    }
+  </div>
+</div>

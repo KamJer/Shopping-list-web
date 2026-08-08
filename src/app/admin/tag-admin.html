@@ -1,0 +1,48 @@
+<div class="admin-page">
+  <div class="admin-card">
+    <div class="admin-header">
+      <a routerLink="/admin" class="back-btn" aria-label="Wróć do panelu">←</a>
+      <h1 class="admin-title">Tagi</h1>
+    </div>
+
+    <div class="tag-create">
+      <input
+        id="new-tag-input"
+        class="tag-input"
+        type="text"
+        placeholder="Nowy tag"
+        [ngModel]="newTag()"
+        (ngModelChange)="newTag.set($event)"
+        (keydown.enter)="addTag()"
+        autocomplete="off"
+      />
+      <button
+        type="button"
+        class="action-btn"
+        [disabled]="isSaving() || !newTag().trim()"
+        (click)="addTag()"
+      >Dodaj</button>
+    </div>
+
+    @if (isLoading()) {
+      <p class="admin-empty">Ładowanie…</p>
+    }
+    @if (!isLoading() && tags().length === 0) {
+      <p class="admin-empty">Brak tagów.</p>
+    }
+    @if (!isLoading() && tags().length > 0) {
+      <ul class="admin-list" role="list">
+        @for (tag of tags(); track tag) {
+          <li class="admin-row">
+            <span class="tag-name">{{ tag }}</span>
+            <button
+              type="button"
+              class="action-btn action-btn--danger"
+              (click)="confirmDelete(tag)"
+            >Usuń</button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>

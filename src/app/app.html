@@ -3,6 +3,7 @@
   <a routerLink="/units" routerLinkActive="active-menu-item" class="menu-item">Jednostki</a>
   <a routerLink="/bought" routerLinkActive="active-menu-item" class="menu-item">Kupione</a>
   <a routerLink="/recipes" routerLinkActive="active-menu-item" class="menu-item">Przepisy</a>
+  <a *ngIf="isAdmin()" routerLink="/admin" routerLinkActive="active-menu-item" class="menu-item">Panel</a>
   <button type="button" class="menu-item menu-logout" (click)="logout()">Wyloguj</button>
 </nav>
 

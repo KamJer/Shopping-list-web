@@ -1,4 +1,4 @@
-import { APP_INITIALIZER, ApplicationConfig } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { LocationStrategy, HashLocationStrategy } from '@angular/common';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -14,6 +14,7 @@ function initAuthSession(bootstrap: AuthSessionBootstrap): () => Promise<void> {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideZoneChangeDetection({ eventCoalescing: true, runCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(
       withInterceptors([forwardedHeadersInterceptor, withCredentialsInterceptor, authInterceptor])

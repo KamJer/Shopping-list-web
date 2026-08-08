@@ -23,3 +23,17 @@ export const guestGuard: CanActivateFn = (): boolean | UrlTree => {
   }
   return router.createUrlTree(['/list']);
 };
+
+/** Wymaga zalogowanego użytkownika z rolą ADMIN. */
+export const adminGuard: CanActivateFn = (): boolean | UrlTree => {
+  const tokenService = inject(TokenService);
+  const router = inject(Router);
+  const token = tokenService.getToken();
+  if (token == null || token.length === 0) {
+    return router.createUrlTree(['/']);
+  }
+  if (!tokenService.isAdmin()) {
+    return router.createUrlTree(['/list']);
+  }
+  return true;
+};
