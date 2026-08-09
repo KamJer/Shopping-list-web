@@ -374,19 +374,31 @@ export class ShoppingListStateService {
   }
 
   private findAmountTypeIndex(list: AmountType[], dto: AmountTypeDto): number {
+    if (dto.localId != null && dto.localId !== 0) {
+      const byLocal = list.findIndex(x => (x.localId ?? 0) === dto.localId);
+      if (byLocal >= 0) {
+        return byLocal;
+      }
+    }
     const id = dto.amountTypeId;
     if (id !== 0) {
       return list.findIndex(x => x.amountTypeId === id);
     }
-    return list.findIndex(x => (x.localId ?? 0) === dto.localId);
+    return -1;
   }
 
   private findCategoryIndex(list: Category[], dto: CategoryDto): number {
+    if (dto.localId != null && dto.localId !== 0) {
+      const byLocal = list.findIndex(x => (x.localId ?? 0) === dto.localId);
+      if (byLocal >= 0) {
+        return byLocal;
+      }
+    }
     const id = dto.categoryId;
     if (id !== 0) {
       return list.findIndex(x => x.categoryId === id);
     }
-    return list.findIndex(x => (x.localId ?? 0) === dto.localId);
+    return -1;
   }
 
   private findShoppingItemIndex(list: ShoppingItem[], dto: ShoppingItemDto): number {

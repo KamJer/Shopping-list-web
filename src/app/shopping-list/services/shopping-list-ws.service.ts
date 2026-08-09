@@ -167,14 +167,18 @@ export class ShoppingListWsService {
     }
   }
 
-  /** Ostatni segment ścieżki (np. putCategory), jeśli pierwszy segment to zalogowany użytkownik. */
+  /** Ostatni segment ścieżki (np. putCategory), jeśli pierwszy segment to zalogowany użytkownik albo literał {userName}. */
   private getCrudTopicTailIfForUser(dest: string, userName: string | null): string | null {
     const parts = dest.split('/').filter(Boolean);
     if (parts.length < 2) {
       return null;
     }
+    const first = parts[0].toLowerCase();
+    if (first === '{username}') {
+      return parts[parts.length - 1];
+    }
     const u = userName?.trim();
-    if (u && parts[0].toLowerCase() !== u.toLowerCase()) {
+    if (u && first !== u.toLowerCase()) {
       return null;
     }
     return parts[parts.length - 1];
