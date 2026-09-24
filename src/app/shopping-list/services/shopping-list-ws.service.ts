@@ -3,6 +3,7 @@ import { Subject, debounceTime, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TokenService } from '../../core/services/token.service';
 import { Command, WebSocketService, WsMessage } from '../../core/services/websocket';
+import { extractUserNameFromJwt } from '../../core/auth/jwt-claims';
 import { Category } from '../models/category.model';
 import { ShoppingItem } from '../models/shopping-item.model';
 import { AmountType } from '../models/amount-type.model';
@@ -53,18 +54,25 @@ export class ShoppingListWsService {
 
   ensureConnected(): void {
     const token = this.tokenService.getToken();
-    const userName = this.tokenService.getUserName();
+    let userName = this.tokenService.getUserName();
     if (!token) {
       return;
     }
     if (!userName) {
-      return;
+      userName = extractUserNameFromJwt(token);
+      if (userName) {
+        this.tokenService.setUserName(userName);
+      } else {
+        console.warn('[ShoppingListWsService] Brak userName w sesji — pomijam połączenie WS.');
+        return;
+      }
     }
 
     this.ws.setToken(token);
     const pipUrl = this.getPipUrl();
     if (!this.messageSubscriptionStarted) {
       this.messageSubscriptionStarted = true;
+      this.sessionId = '';
       this.ws.connect();
       const pipDestNorm = this.normalizeTopic(pipUrl);
       const syncDest = this.normalizeTopic(this.synchronizeDataUrl);
@@ -146,6 +154,7 @@ export class ShoppingListWsService {
       this.subscribeToShoppingListTopics(userName);
     } else {
       this.ws.setToken(token);
+      this.sessionId = '';
       this.ws.connect();
     }
   }

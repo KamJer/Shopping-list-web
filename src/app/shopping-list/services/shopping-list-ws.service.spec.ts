@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 import { Command, WebSocketService } from '../../core/services/websocket';
@@ -78,5 +79,88 @@ describe('ShoppingListWsService', () => {
     const items = state.shoppingItems();
     expect(items.length).toBe(1);
     expect(items[0].itemCategoryId).toBe(5);
+  });
+});
+
+function base64UrlJson(o: unknown): string {
+  return btoa(JSON.stringify(o))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+function jwtWithSub(name: string): string {
+  return `${base64UrlJson({ alg: 'HS256' })}.${base64UrlJson({ sub: name })}.sig`;
+}
+
+describe('ShoppingListWsService session handling', () => {
+  let connectCount: number;
+
+  function configure(tokenServiceMock: { [K in string]: unknown }): ShoppingListWsService {
+    connectCount = 0;
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: WebSocketService,
+          useValue: {
+            messages$: new Subject<any>(),
+            setToken: () => {},
+            connect: () => {
+              connectCount++;
+            },
+            sendMessage: () => {},
+            disconnect: () => {}
+          }
+        },
+        { provide: TokenService, useValue: tokenServiceMock },
+        ShoppingListStateService,
+        ShoppingListWsService
+      ]
+    });
+    return TestBed.inject(ShoppingListWsService);
+  }
+
+  it('does not connect when there is no token', () => {
+    const service: ShoppingListWsService = configure({
+      getToken: () => null,
+      getUserName: () => 'tester'
+    });
+
+    service.ensureConnected();
+    expect(connectCount).toBe(0);
+  });
+
+  it('restores userName from JWT sub and connects after reload', () => {
+    let savedUserName: string | null = null;
+    const service: ShoppingListWsService = configure({
+      getToken: () => jwtWithSub('tester'),
+      getUserName: () => null,
+      setUserName: (n: string) => {
+        savedUserName = n;
+      }
+    });
+
+    service.ensureConnected();
+
+    expect(savedUserName).toBe('tester');
+    expect(connectCount).toBe(1);
+  });
+
+  it('does not connect when userName cannot be restored and warns', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const service: ShoppingListWsService = configure({
+      getToken: () => 'not-a-jwt-token',
+      getUserName: () => null,
+      setUserName: () => {
+        throw new Error('setUserName should not be called');
+      }
+    });
+
+    service.ensureConnected();
+
+    expect(connectCount).toBe(0);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });

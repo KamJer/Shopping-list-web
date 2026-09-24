@@ -18,8 +18,10 @@ function reconnectWebSocketIfPresent(ws: WebSocketService | null, accessToken: s
     return;
   }
   ws.setToken(accessToken);
-  ws.disconnect();
-  ws.connect();
+  if (ws.isConnected()) {
+    ws.disconnect();
+    ws.connect();
+  }
 }
 
 /** Pobiera `GET /user` i zapisuje rolę w sesji; przy błędzie czyści rolę (nie blokuje logowania). */
@@ -37,6 +39,9 @@ export function fetchUserRole(
   )
     .then(info => {
       const normalized = normalizeUserInfo(info);
+      if (normalized) {
+        tokenService.setUserName(normalized.userName);
+      }
       tokenService.setRole(normalized?.role ?? null);
     })
     .catch(() => {
@@ -74,7 +79,8 @@ function executeRefresh(
       });
     }
     tokenService.persistAuthTokens(dto);
-    reconnectWebSocketIfPresent(ws, dto.accessToken);
-    return fetchUserRole(http, tokenService, dto.accessToken);
+    return fetchUserRole(http, tokenService, dto.accessToken).then(() => {
+      reconnectWebSocketIfPresent(ws, dto.accessToken);
+    });
   });
 }

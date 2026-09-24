@@ -31,10 +31,13 @@ export interface WsMessage {
 })
 export class WebSocketService {
 
+  private static readonly RECONNECT_DELAY_MS = 3000;
+
   private readonly notify = inject(NotificationService);
   private socket$: WebSocketSubject<unknown> | undefined;
   public messages$ = new Subject<any>();
   private token: string | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private tokenService: TokenService
@@ -44,8 +47,13 @@ export class WebSocketService {
     this.token = token;
   }
 
+  isConnected(): boolean {
+    return this.socket$ !== undefined;
+  }
+
   connect() {
     this.disconnect();
+    this.clearReconnectTimer();
 
     if (!this.token) {
       this.token = this.tokenService.getToken();
@@ -68,7 +76,14 @@ export class WebSocketService {
       next: msg => {
         this.messages$.next(msg);
       },
-      error: () => this.notify.show(Messages.connection.realtimeError, 'error')
+      error: () => {
+        this.notify.show(Messages.connection.realtimeError, 'error');
+        this.socket$ = undefined;
+        this.scheduleReconnect();
+      },
+      complete: () => {
+        this.socket$ = undefined;
+      }
     });
 
     const message: WsMessage = {
@@ -90,6 +105,29 @@ export class WebSocketService {
     if (this.socket$) {
       this.socket$.complete();
       this.socket$ = undefined;
+    }
+    this.clearReconnectTimer();
+  }
+
+  /** Prosty reconnect z opóźnieniem; działa tylko gdy sesja wciąż żyje (token w TokenService). */
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer !== null) {
+      return;
+    }
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      const freshToken = this.tokenService.getToken();
+      if (freshToken) {
+        this.token = freshToken;
+        this.connect();
+      }
+    }, WebSocketService.RECONNECT_DELAY_MS);
+  }
+
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
   }
 }
