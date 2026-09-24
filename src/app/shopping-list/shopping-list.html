@@ -121,6 +121,7 @@
       [(ngModel)]="newCategoryName"
       (keydown.enter)="confirmNewCategory()"
       autocomplete="off"
+      [appFocus]="newCategoryDialogOpen"
     />
     <div class="dialog-actions">
       <button type="button" class="dialog-btn dialog-btn--secondary" (click)="closeNewCategoryDialog()">Anuluj</button>
@@ -150,6 +151,7 @@
       type="text"
       [(ngModel)]="newItemName"
       autocomplete="off"
+      [appFocus]="newItemDialogOpen"
     />
 
     <label class="dialog-label" for="new-item-amount">Ilość</label>

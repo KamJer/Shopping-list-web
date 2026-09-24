@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ShoppingListDataService } from '../shopping-list/services/shopping-list-data.service';
 import { AmountType } from '../shopping-list/models/amount-type.model';
+import { FocusDirective } from '../shared/focus.directive';
 
 @Component({
   selector: 'app-units',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FocusDirective],
   templateUrl: './units.html',
   styleUrl: './units.css',
 })
@@ -29,14 +30,12 @@ export class Units implements OnInit {
     this.editingUnit = null;
     this.unitName = '';
     this.unitDialogOpen = true;
-    queueMicrotask(() => document.getElementById('unit-name-input')?.focus());
   }
 
   openEditUnitDialog(unit: AmountType): void {
     this.editingUnit = unit;
     this.unitName = unit.typeName;
     this.unitDialogOpen = true;
-    queueMicrotask(() => document.getElementById('unit-name-input')?.focus());
   }
 
   closeUnitDialog(): void {

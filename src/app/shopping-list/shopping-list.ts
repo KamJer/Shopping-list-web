@@ -4,11 +4,13 @@ import { CommonModule } from '@angular/common';
 import { ShoppingListDataService } from './services/shopping-list-data.service';
 import { Category } from './models/category.model';
 import { ShoppingItem } from './models/shopping-item.model';
+import { canConfirmNewItem } from './utils/confirm-utils';
+import { FocusDirective } from '../shared/focus.directive';
 
 @Component({
   selector: 'app-shopping-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FocusDirective],
   templateUrl: './shopping-list.html',
   styleUrl: './shopping-list.css'
 })
@@ -110,14 +112,12 @@ export class ShoppingList implements OnInit {
     this.newCategoryName = category.categoryName;
     this.categoryMenuOpenKey = null;
     this.newCategoryDialogOpen = true;
-    queueMicrotask(() => document.getElementById('new-cat-name')?.focus());
   }
 
   openNewCategoryDialog(): void {
     this.editingCategory = null;
     this.newCategoryName = '';
     this.newCategoryDialogOpen = true;
-    queueMicrotask(() => document.getElementById('new-cat-name')?.focus());
   }
 
   closeNewCategoryDialog(): void {
@@ -146,7 +146,6 @@ export class ShoppingList implements OnInit {
     this.newItemName = '';
     this.newItemAmount = null;
     this.newItemDialogOpen = true;
-    queueMicrotask(() => document.getElementById('new-item-name')?.focus());
   }
 
   openEditItemDialog(item: ShoppingItem): void {
@@ -161,7 +160,6 @@ export class ShoppingList implements OnInit {
     this.newItemName = item.itemName;
     this.newItemAmount = item.amount ?? null;
     this.newItemDialogOpen = true;
-    queueMicrotask(() => document.getElementById('new-item-name')?.focus());
   }
 
   closeNewItemDialog(): void {
@@ -172,17 +170,13 @@ export class ShoppingList implements OnInit {
   }
 
   canConfirmNewItem(): boolean {
-    const cats = this.data.categories();
-    const atList = this.data.amountTypes();
-    return (
-      cats.length > 0 &&
-      this.newItemCategoryIndex >= 0 &&
-      this.newItemCategoryIndex < cats.length &&
-      this.newItemAmountTypeId != null &&
-      atList.some(a => this.data.getAmountTypeKey(a) === this.newItemAmountTypeId) &&
-      this.newItemName.trim().length > 0 &&
-      this.newItemAmount != null &&
-      !Number.isNaN(Number(this.newItemAmount))
+    return canConfirmNewItem(
+      this.data.categories(),
+      this.data.amountTypes(),
+      this.newItemCategoryIndex,
+      this.newItemAmountTypeId,
+      this.newItemName,
+      this.newItemAmount
     );
   }
 

@@ -1,5 +1,11 @@
 import { HttpInterceptorFn } from '@angular/common/http';
+import { WITH_CREDENTIALS } from '../http-context-keys';
 
-/** Wszystkie żądania HTTP z cookies (sesja / refresh HttpOnly na tym samym originie). */
-export const withCredentialsInterceptor: HttpInterceptorFn = (req, next) =>
-  next(req.clone({ withCredentials: true }));
+/** Ustawia withCredentials tylko dla requestów oznaczonych z HttpContext. */
+export const withCredentialsInterceptor: HttpInterceptorFn = (req, next) => {
+  const needCredentials = req.context.get(WITH_CREDENTIALS);
+  if (needCredentials) {
+    return next(req.clone({ withCredentials: true }));
+  }
+  return next(req);
+};

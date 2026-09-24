@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { TagsService } from '../recipes/services/tags.service';
 import { NotificationService } from '../core/services/notification';
 import { Messages } from '../core/messages';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-tag-admin',
@@ -16,6 +17,7 @@ import { Messages } from '../core/messages';
 export class TagAdmin implements OnInit {
   private readonly tagsService = inject(TagsService);
   private readonly notify = inject(NotificationService);
+  private readonly confirm = inject(ConfirmService);
 
   protected readonly messages = Messages;
 
@@ -65,8 +67,12 @@ export class TagAdmin implements OnInit {
     });
   }
 
-  confirmDelete(tag: string): void {
-    if (!window.confirm(Messages.admin.tagDeleteConfirm.replace('{tag}', tag))) {
+  async confirmDelete(tag: string): Promise<void> {
+    const confirmed = await this.confirm.ask(
+      Messages.admin.tagDeleteConfirm.replace('{tag}', tag),
+      Messages.admin.tagDeleteConfirm.replace('{tag}', tag)
+    );
+    if (!confirmed) {
       return;
     }
     this.tagsService.delete(tag).subscribe({

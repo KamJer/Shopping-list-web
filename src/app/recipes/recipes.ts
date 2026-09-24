@@ -12,6 +12,7 @@ import { TagsService } from './services/tags.service';
 import { NotificationService } from '../core/services/notification';
 import { TokenService } from '../core/services/token.service';
 import { Messages } from '../core/messages';
+import { ConfirmService } from '../shared/confirm.service';
 
 type RecipeMode = 'all' | 'name' | 'products' | 'tags' | 'mine';
 
@@ -50,6 +51,7 @@ export class Recipes implements OnInit {
   private readonly tagsService = inject(TagsService);
   private readonly notify = inject(NotificationService);
   private readonly tokenService = inject(TokenService);
+  private readonly confirm = inject(ConfirmService);
 
   readonly recipes = signal<RecipeDto[]>([]);
   readonly totalPages = signal(0);
@@ -176,7 +178,7 @@ export class Recipes implements OnInit {
         }
       },
       error: err => {
-        console.warn('Nie udało się pobrać listy tagów (autocomplete wyłączony):', err);
+        this.notify.show('Nie udało się pobrać listy tagów (autocomplete wyłączony).', 'warn');
         this.allTags.set([]);
       }
     });
@@ -360,14 +362,18 @@ export class Recipes implements OnInit {
     return owner.toLowerCase() === currentUser.toLowerCase();
   }
 
-  confirmDelete(recipe: RecipeDto, ev: Event): void {
+  async confirmDelete(recipe: RecipeDto, ev: Event): Promise<void> {
     ev.preventDefault();
     ev.stopPropagation();
     const id = this.view.getRecipeIdForApi(recipe);
     if (id == null) {
       return;
     }
-    if (!window.confirm(Messages.recipes.confirmDelete)) {
+    const confirmed = await this.confirm.ask(
+      Messages.recipes.confirmDelete,
+      Messages.recipes.confirmDelete
+    );
+    if (!confirmed) {
       return;
     }
     this.recipesService.deleteRecipe(id).subscribe({

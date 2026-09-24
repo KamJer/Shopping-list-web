@@ -1,18 +1,22 @@
-export interface RecipeDto {
-  /** Id przepisu (nazwa pola zależy od backendu, trzymamy opcjonalnie). */
-  recipeId?: number;
-  /** Najczęściej: nazwa przepisu. */
-  name?: string;
-  recipeName?: string;
-  title?: string;
-  /** Kto utworzył przepis (userName / source z backendu). */
-  userName?: string;
-  source?: string;
-
-  /** Tagi przepisu. */
-  tags?: string[];
-
-  /** Reszta pól jest zależna od backendu. */
-  [key: string]: unknown;
+export interface RecipeIngredientDto {
+  name: string;
+  amount: number | string;
+  unit: string;
 }
 
+export interface RecipeStepDto {
+  stepNumber: number;
+  description: string;
+}
+
+export interface RecipeDto {
+  recipeId?: number;
+  name: string;
+  description: string;
+  source: string;
+  tags: string[];
+  published: boolean;
+  userName: string;
+  ingredients?: RecipeIngredientDto[];
+  steps?: RecipeStepDto[];
+}

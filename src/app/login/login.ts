@@ -1,13 +1,14 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { normalizeTokenResponse, TokenDto } from '../core/models/token-dto.model';
 import { fetchUserRole } from '../core/auth/shared-token-refresh';
 import { TokenService } from '../core/services/token.service';
 import { NotificationService } from '../core/services/notification';
 import { Messages } from '../core/messages';
+import { WITH_CREDENTIALS } from '../core/http-context-keys';
 
 @Component({
   selector: 'app-login',
@@ -17,6 +18,7 @@ import { Messages } from '../core/messages';
   styleUrl: './login.css'
 })
 export class Login {
+  private readonly credentialsContext = new HttpContext().set(WITH_CREDENTIALS, true);
 
   username: string = '';
   password: string = '';
@@ -50,7 +52,7 @@ export class Login {
       password: this.password
     };
 
-    this.http.post<TokenDto>('/user/log', user).subscribe({
+    this.http.post<TokenDto>('/user/log', user, { context: this.credentialsContext }).subscribe({
       next: (response) => {
         void this.tryFinishLogin(this.username, response).then(ok => {
           if (!ok) {
@@ -76,7 +78,7 @@ export class Login {
     };
 
     /** `POST /user/register` — to samo DTO co logowanie; odpowiedź z tokenami jak `/user/log`. */
-    this.http.post<TokenDto>('/user/register', data).subscribe({
+    this.http.post<TokenDto>('/user/register', data, { context: this.credentialsContext }).subscribe({
       next: (response) => {
         void this.tryFinishLogin(this.username, response).then(ok => {
           if (!ok) {

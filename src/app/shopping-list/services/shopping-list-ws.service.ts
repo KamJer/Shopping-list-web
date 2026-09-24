@@ -1,4 +1,5 @@
 import { DestroyRef, inject, Injectable } from '@angular/core';
+import { Subject, debounceTime, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TokenService } from '../../core/services/token.service';
 import { Command, WebSocketService, WsMessage } from '../../core/services/websocket';
@@ -13,37 +14,39 @@ import {
   parseShoppingItemDtoFromWsBody
 } from './entity-ws-body.adapter';
 import { ShoppingListStateService } from './shopping-list-state.service';
+import { NotificationService } from '../../core/services/notification';
 
 /** Subskrypcja WebSocket i wysyłka komend — używane przez fasadę listy. */
 @Injectable({ providedIn: 'root' })
 export class ShoppingListWsService {
+  private readonly pipSyncTrigger = new Subject<void>();
+
   private readonly ws = inject(WebSocketService);
   private readonly tokenService = inject(TokenService);
   private readonly state = inject(ShoppingListStateService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notification = inject(NotificationService);
 
   private readonly synchronizeDataUrl = '/synchronizeData';
-  private pipSyncDebounceHandle: ReturnType<typeof setTimeout> | null = null;
-  private readonly pipSyncDebounceMs = 250;
 
   private sessionId = '';
   private messageSubscriptionStarted = false;
 
   constructor() {
-    this.destroyRef.onDestroy(() => {
-      if (this.pipSyncDebounceHandle != null) {
-        clearTimeout(this.pipSyncDebounceHandle);
-        this.pipSyncDebounceHandle = null;
-      }
-    });
+    this.pipSyncTrigger.pipe(
+      debounceTime(250),
+      switchMap(() => {
+        const u = this.tokenService.getUserName();
+        this.sendSynchronizeRequest(u);
+        return [];
+      }),
+      takeUntilDestroyed()
+    ).subscribe();
   }
 
-  /** Zeruje sesję WS (id synchronizacji, timer PIP) i zamyka gniazdo. */
+  /** Zeruje sesję WS (id synchronizacji) i zamyka gniazdo. */
   resetForLogout(): void {
-    if (this.pipSyncDebounceHandle != null) {
-      clearTimeout(this.pipSyncDebounceHandle);
-      this.pipSyncDebounceHandle = null;
-    }
+    this.pipSyncTrigger.complete();
     this.sessionId = '';
     this.ws.disconnect();
   }
@@ -97,12 +100,12 @@ export class ShoppingListWsService {
               if (!body) {
                 break;
               }
-              try {
-                const allDto = parseAllDtoFromWsBody(body);
-                this.state.applySynchronizePayload(allDto);
-              } catch (e) {
-                void e;
-              }
+        try {
+          const allDto = parseAllDtoFromWsBody(body);
+          this.state.applySynchronizePayload(allDto);
+        } catch (e) {
+          this.notification.show('Błąd parsowania danych synchronizacji.', 'error');
+        }
               break;
             }
 
@@ -113,6 +116,7 @@ export class ShoppingListWsService {
               try {
                 this.dispatchCrudTopicMessage(crudTail, bodyCrud);
               } catch (e) {
+                this.notification.show('Błąd przetwarzania wiadomości CRUD.', 'error');
               }
               break;
             }
@@ -235,14 +239,7 @@ export class ShoppingListWsService {
   }
 
   scheduleSynchronizeAfterPipNotification(): void {
-    if (this.pipSyncDebounceHandle != null) {
-      clearTimeout(this.pipSyncDebounceHandle);
-    }
-    this.pipSyncDebounceHandle = setTimeout(() => {
-      this.pipSyncDebounceHandle = null;
-      const u = this.tokenService.getUserName();
-      this.sendSynchronizeRequest(u);
-    }, this.pipSyncDebounceMs);
+    this.pipSyncTrigger.next();
   }
 
   sendSynchronizeRequest(userName: string | null): void {

@@ -41,6 +41,7 @@
       [(ngModel)]="unitName"
       (keydown.enter)="confirmUnitDialog()"
       autocomplete="off"
+      [appFocus]="unitDialogOpen"
     />
     <div class="dialog-actions">
       <button type="button" class="dialog-btn dialog-btn--secondary" (click)="closeUnitDialog()">Anuluj</button>

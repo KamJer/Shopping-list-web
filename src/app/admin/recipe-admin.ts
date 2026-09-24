@@ -5,6 +5,7 @@ import { RecipeAdminService } from './services/recipe-admin.service';
 import { RecipeDto } from '../recipes/models/recipe-dto.model';
 import { NotificationService } from '../core/services/notification';
 import { Messages } from '../core/messages';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-recipe-admin',
@@ -16,6 +17,7 @@ import { Messages } from '../core/messages';
 export class RecipeAdmin implements OnInit {
   private readonly recipeAdminService = inject(RecipeAdminService);
   private readonly notify = inject(NotificationService);
+  private readonly confirm = inject(ConfirmService);
 
   protected readonly messages = Messages;
   protected readonly Math = Math;
@@ -62,12 +64,16 @@ export class RecipeAdmin implements OnInit {
     });
   }
 
-  confirmDelete(recipe: RecipeDto): void {
+  async confirmDelete(recipe: RecipeDto): Promise<void> {
     const id = this.getRecipeId(recipe);
     if (id == null) {
       return;
     }
-    if (!window.confirm(Messages.admin.recipeDeleteConfirm)) {
+    const confirmed = await this.confirm.ask(
+      Messages.admin.recipeDeleteConfirm,
+      Messages.admin.recipeDeleteConfirm
+    );
+    if (!confirmed) {
       return;
     }
     this.recipeAdminService.deleteRecipe(id).subscribe({

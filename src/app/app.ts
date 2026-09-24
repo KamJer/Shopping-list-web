@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { NgIf } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TokenService } from './core/services/token.service';
 import { ShoppingListDataService } from './shopping-list/services/shopping-list-data.service';
@@ -8,6 +8,7 @@ import { NotificationService } from './core/services/notification';
 import { NotificationBanner } from './core/components/notification-banner';
 import { Messages } from './core/messages';
 import { firstValueFrom } from 'rxjs';
+import { WITH_CREDENTIALS } from './core/http-context-keys';
 
 @Component({
   selector: 'app-root',
@@ -34,7 +35,8 @@ export class App {
 
   protected async logout(): Promise<void> {
     try {
-      const ok = await firstValueFrom(this.http.get<boolean>('/user/logout'));
+      const context = new HttpContext().set(WITH_CREDENTIALS, true);
+      const ok = await firstValueFrom(this.http.get<boolean>('/user/logout', { context }));
       if (ok === true) {
         this.shoppingListData.clearSessionForLogout();
         this.tokenService.clearAuth();

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { RecipeViewAdapter } from '../adapters/recipe-view.adapter';
-import { RecipeDto } from '../models/recipe-dto.model';
+import { RecipeDto, RecipeIngredientDto, RecipeStepDto } from '../models/recipe-dto.model';
 
 export interface RecipeFormTagRow {
   id: number;
@@ -48,7 +48,6 @@ export class RecipeFormService {
   }): RecipeDto {
     const title = input.title.trim();
     const description = input.description.trim();
-    const isEdit = input.editSource != null;
 
     const tagStrings: string[] = input.tagRows
       .map(r => r.value.trim())
@@ -56,39 +55,28 @@ export class RecipeFormService {
 
     const ingredientDtos = input.ingredientRows
       .map(row => this.buildIngredientDto(row))
-      .filter((dto): dto is Record<string, unknown> => dto != null);
+      .filter((dto): dto is RecipeIngredientDto => dto != null);
 
     const stepDtos = this.buildStepDtosFromRows(input.stepRows);
 
-    const base: RecipeDto = isEdit ? { ...input.editSource! } : {};
+    const base: RecipeDto = input.editSource != null
+      ? { ...input.editSource }
+      : {
+          name: '',
+          description: '',
+          source: '',
+          tags: [],
+          published: false,
+          userName: ''
+        };
 
     base.name = title;
-    base.title = title;
-    base.recipeName = title;
-    base['description'] = description;
-    base['opis'] = description;
-    base['recipeDescription'] = description;
-
-    base['source'] = input.source;
-
-    this.applyPublicationFlags(base, input.isPublic);
-
-    const setTags = (): void => {
-      base['tags'] = tagStrings;
-    };
-    const setIngredients = (): void => {
-      base['ingredients'] = ingredientDtos;
-      base['ingredientDtoList'] = ingredientDtos;
-    };
-    const setSteps = (): void => {
-      base['steps'] = stepDtos;
-      base['recipeSteps'] = stepDtos;
-      base['stepDtoList'] = stepDtos;
-    };
-
-    setTags();
-    setIngredients();
-    setSteps();
+    base.description = description;
+    base.source = input.source;
+    base.tags = tagStrings;
+    base.published = input.isPublic;
+    base.ingredients = ingredientDtos;
+    base.steps = stepDtos;
 
     return base;
   }
@@ -97,12 +85,12 @@ export class RecipeFormService {
     let next = startRowId;
     const bump = (): number => next++;
 
-    const title = this.view.getRecipeName(recipe);
-    const description = this.view.getDescriptionPlain(recipe);
-    const source = this.view.getSource(recipe);
-    const recipeIsPublic = this.view.readRecipePublicFlag(recipe);
+    const title = recipe.name ?? 'Przepis';
+    const description = recipe.description ?? '';
+    const source = recipe.source ?? '';
+    const recipeIsPublic = recipe.published ?? false;
 
-    const tagStrings = this.view.getTags(recipe);
+    const tagStrings = recipe.tags ?? [];
     const createTagRows: RecipeFormTagRow[] = tagStrings.map(s => ({ id: bump(), value: s }));
 
     const ing = this.view.getIngredientRows(recipe);
@@ -132,7 +120,7 @@ export class RecipeFormService {
     };
   }
 
-  private buildIngredientDto(row: RecipeFormIngredientRow): Record<string, unknown> | null {
+  private buildIngredientDto(row: RecipeFormIngredientRow): RecipeIngredientDto | null {
     const name = row.productName.trim();
     const unit = row.unitType.trim();
     const amtNormalized = row.amount.trim().replace(/\s/g, '').replace(',', '.');
@@ -141,37 +129,21 @@ export class RecipeFormService {
     if (!name && !unit && !hasAmount) {
       return null;
     }
-    const dto: Record<string, unknown> = {};
-    if (name) {
-      dto['name'] = name;
-      dto['productName'] = name;
-    }
-    if (unit) {
-      dto['unitName'] = unit;
-      dto['unit'] = unit;
-    }
-    if (hasAmount) {
-      dto['amount'] = amountNum;
-      dto['quantity'] = amountNum;
-    }
-    return dto;
-  }
-
-  private buildStepPayloadObject(text: string, stepNumber: number): Record<string, unknown> {
     return {
-      description: text,
-      stepDescription: text,
-      recipeStepDescription: text,
-      instruction: text,
-      content: text,
-      text,
-      stepNumber,
-      order: stepNumber,
-      stepOrder: stepNumber
+      name: name || 'Produkt',
+      amount: hasAmount ? amountNum : amtNormalized,
+      unit
     };
   }
 
-  private buildStepDtosFromRows(stepRows: RecipeFormStepRow[]): Record<string, unknown>[] {
+  private buildStepPayloadObject(text: string, stepNumber: number): RecipeStepDto {
+    return {
+      stepNumber,
+      description: text
+    };
+  }
+
+  private buildStepDtosFromRows(stepRows: RecipeFormStepRow[]): RecipeStepDto[] {
     const nonEmpty = stepRows
       .map((row, listIndex) => ({ row, listIndex }))
       .filter(({ row }) => row.value.trim().length > 0);
@@ -189,13 +161,5 @@ export class RecipeFormService {
     rows.sort((a, b) => a.stepNum - b.stepNum || a.listIndex - b.listIndex);
 
     return rows.map(r => this.buildStepPayloadObject(r.text, r.stepNum));
-  }
-
-  private applyPublicationFlags(base: RecipeDto, isPublic: boolean): void {
-    base['published'] = isPublic;
-    base['isPublic'] = isPublic;
-    base['publicRecipe'] = isPublic;
-    base['isPublished'] = isPublic;
-    base['publiczny'] = isPublic;
   }
 }

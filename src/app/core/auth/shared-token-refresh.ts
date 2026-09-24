@@ -1,9 +1,10 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpContext } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
 import { normalizeTokenResponse } from '../models/token-dto.model';
 import { normalizeUserInfo } from '../models/user-info.model';
 import { TokenService } from '../services/token.service';
 import { WebSocketService } from '../services/websocket';
+import { WITH_CREDENTIALS } from '../http-context-keys';
 
 export const AUTH_REFRESH_PATH = '/user/refresh';
 
@@ -28,8 +29,9 @@ export function fetchUserRole(
   explicitToken?: string
 ): Promise<void> {
   const headers = explicitToken ? { Authorization: `Bearer ${explicitToken}` } : undefined;
+  const context = new HttpContext().set(WITH_CREDENTIALS, true);
   return firstValueFrom(
-    http.get<unknown>('/user', headers ? { headers } : undefined).pipe(
+    http.get<unknown>('/user', headers ? { headers, context } : { context }).pipe(
       timeout(USER_FETCH_TIMEOUT_MS)
     )
   )
@@ -60,10 +62,9 @@ function executeRefresh(
   tokenService: TokenService,
   ws: WebSocketService | null
 ): Promise<void> {
+  const context = new HttpContext().set(WITH_CREDENTIALS, true);
   return firstValueFrom(
-    http.get<unknown>(AUTH_REFRESH_PATH, {
-      withCredentials: true
-    }).pipe(timeout(REFRESH_TIMEOUT_MS))
+    http.get<unknown>(AUTH_REFRESH_PATH, { context }).pipe(timeout(REFRESH_TIMEOUT_MS))
   ).then(raw => {
     const dto = normalizeTokenResponse(raw);
     if (!dto?.accessToken) {

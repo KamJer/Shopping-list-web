@@ -11,13 +11,15 @@ import { NotificationService } from '../core/services/notification';
 import { Messages, formatMessage } from '../core/messages';
 import { ShoppingListDataService } from '../shopping-list/services/shopping-list-data.service';
 import { ShoppingItem } from '../shopping-list/models/shopping-item.model';
+import { canConfirmNewItem } from '../shopping-list/utils/confirm-utils';
+import { FocusDirective } from '../shared/focus.directive';
 
 export type { RecipeIngredientRow };
 
 @Component({
   selector: 'app-recipe-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, FocusDirective],
   templateUrl: './recipe-detail.html',
   styleUrl: './recipe-detail.css'
 })
@@ -139,7 +141,6 @@ export class RecipeDetail implements OnInit, OnDestroy {
     }
 
     this.newItemDialogOpen = true;
-    queueMicrotask(() => document.getElementById('recipe-item-name')?.focus());
   }
 
   closeNewItemDialog(): void {
@@ -150,17 +151,13 @@ export class RecipeDetail implements OnInit, OnDestroy {
   }
 
   canConfirmNewItem(): boolean {
-    const cats = this.data.categories();
-    const atList = this.data.amountTypes();
-    return (
-      cats.length > 0 &&
-      this.newItemCategoryIndex >= 0 &&
-      this.newItemCategoryIndex < cats.length &&
-      this.newItemAmountTypeId != null &&
-      atList.some(a => this.data.getAmountTypeKey(a) === this.newItemAmountTypeId) &&
-      this.newItemName.trim().length > 0 &&
-      this.newItemAmount != null &&
-      !Number.isNaN(Number(this.newItemAmount))
+    return canConfirmNewItem(
+      this.data.categories(),
+      this.data.amountTypes(),
+      this.newItemCategoryIndex,
+      this.newItemAmountTypeId,
+      this.newItemName,
+      this.newItemAmount
     );
   }
 

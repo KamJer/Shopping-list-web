@@ -7,11 +7,13 @@ import { UserAdmin as UserAdminModel } from './models/user-admin.model';
 import { TokenService } from '../core/services/token.service';
 import { NotificationService } from '../core/services/notification';
 import { Messages } from '../core/messages';
+import { FocusDirective } from '../shared/focus.directive';
+import { ConfirmService } from '../shared/confirm.service';
 
 @Component({
   selector: 'app-user-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, FocusDirective],
   templateUrl: './user-admin.html',
   styleUrl: './user-admin.css'
 })
@@ -19,6 +21,7 @@ export class UserAdmin implements OnInit {
   private readonly userAdminService = inject(UserAdminService);
   private readonly tokenService = inject(TokenService);
   private readonly notify = inject(NotificationService);
+  private readonly confirm = inject(ConfirmService);
 
   protected readonly messages = Messages;
 
@@ -56,7 +59,7 @@ export class UserAdmin implements OnInit {
     );
   }
 
-  changeRole(user: UserAdminModel): void {
+  async changeRole(user: UserAdminModel): Promise<void> {
     if (user.role === 'SUPER_ADMIN') {
       this.notify.show(Messages.admin.cannotModifySuperAdmin, 'warn');
       return;
@@ -66,7 +69,11 @@ export class UserAdmin implements OnInit {
       targetRole === 'ADMIN'
         ? Messages.admin.promoteConfirm
         : Messages.admin.demoteConfirm;
-    if (!window.confirm(confirmText.replace('{user}', user.userName))) {
+    const confirmed = await this.confirm.ask(
+      confirmText.replace('{user}', user.userName),
+      confirmText.replace('{user}', user.userName)
+    );
+    if (!confirmed) {
       return;
     }
     this.userAdminService.changeRole(user.userName, targetRole).subscribe({
@@ -78,14 +85,15 @@ export class UserAdmin implements OnInit {
     });
   }
 
-  deleteUser(user: UserAdminModel): void {
+  async deleteUser(user: UserAdminModel): Promise<void> {
     if (user.role === 'SUPER_ADMIN') {
       this.notify.show(Messages.admin.cannotModifySuperAdmin, 'warn');
       return;
     }
-    if (!window.confirm(Messages.admin.deleteConfirm.replace('{user}', user.userName))) {
-      return;
-    }
+    const confirmed = await this.confirm.ask(
+      Messages.admin.deleteConfirm.replace('{user}', user.userName),
+      Messages.admin.deleteConfirm.replace('{user}', user.userName)
+    );
     this.userAdminService.deleteUser(user.userName).subscribe({
       next: () => {
         this.notify.show(Messages.admin.userDeleted, 'success');
@@ -105,7 +113,6 @@ export class UserAdmin implements OnInit {
     this.confirmPassword = '';
     this.passwordError.set(null);
     this.passwordDialogOpen.set(true);
-    queueMicrotask(() => document.getElementById('new-password-input')?.focus());
   }
 
   closePasswordDialog(): void {

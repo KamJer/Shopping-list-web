@@ -173,26 +173,26 @@ function shallowUnwrapListItem(item: unknown): RecipeDto {
   if (isRecord(item)) {
     const r = item['recipe'];
     if (isRecord(r)) {
-      return r as RecipeDto;
+      return r as unknown as RecipeDto;
     }
   }
-  return item as RecipeDto;
+  return item as unknown as RecipeDto;
 }
 
 export function unwrapSingleRecipe(raw: unknown): RecipeDto {
   if (raw == null || typeof raw !== 'object') {
-    return raw as RecipeDto;
+    return raw as unknown as RecipeDto;
   }
   const o = raw as Record<string, unknown>;
   const recipe = o['recipe'];
   if (isRecord(recipe)) {
-    return recipe as RecipeDto;
+    return recipe as unknown as RecipeDto;
   }
   const data = o['data'];
   if (isRecord(data)) {
     if (data['content'] == null) {
-      return data as RecipeDto;
+      return data as unknown as RecipeDto;
     }
   }
-  return raw as RecipeDto;
+  return raw as unknown as RecipeDto;
 }
