@@ -1,6 +1,6 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import { RecipeDto } from '../models/recipe-dto.model';
-import { RecipeViewAdapter } from './recipe-view.adapter';
+import { RecipeViewAdapter } from '../adapters/recipe-view.adapter';
 
 @Pipe({
   name: 'recipeView',

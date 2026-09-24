@@ -34,7 +34,7 @@ export class RecipeAdmin implements OnInit {
   }
 
   getRecipeName(recipe: RecipeDto): string {
-    return (recipe.name ?? recipe.recipeName ?? '—') as string;
+    return recipe.name ?? '—';
   }
 
   getRecipeOwner(recipe: RecipeDto): string {
@@ -46,7 +46,7 @@ export class RecipeAdmin implements OnInit {
   }
 
   getRecipeId(recipe: RecipeDto): number | null {
-    const id = recipe.recipeId ?? recipe['id'];
+    const id = recipe.recipeId ?? null;
     return typeof id === 'number' ? id : null;
   }
 
